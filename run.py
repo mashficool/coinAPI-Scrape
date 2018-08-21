@@ -4,7 +4,7 @@ Example, try:
 
 
 Usage:
-  run.py (--symbol=<string>... | --exchange=<string>... [--base=<string>...] [--quote=<string>...] [--type=<string>...]) --source=<string> --from=<date> [--to=<date>] [--period=<string>]  [--limit=<int>]  [--levels=<int>]  [--path=<path>] [--filetype=<string>]
+  run.py (--symbol=<string>... | --exchange=<string>... [--base=<string>...] [--quote=<string>...] [--type=<string>...]) --source=<string> --from=<date> [--to=<date>] [--period=<string>]  [--limit=<int>]  [--levels=<int>]  [--path=<path>] [--filetype=<string>] [--proxy]
   run.py (-h | --help)
 
 Arguments:
@@ -24,6 +24,7 @@ Options:
   --period=<string>  supported time periods available for requesting OHLCV timeseries data OR to convert data to, check https://docs.coinapi.io/#list-all-periods.
   --limit=<int>  Amount of items to return , minimum is 1, maximum is 100000 [default: 100000].
   --levels=<int>  Maximum amount of levels from each side of the book to include in response, max 20 [default: 20].
+  --proxy  if you want to use proxy [default: False].
 
 """
 
@@ -364,7 +365,7 @@ def parse_args():
     schema = Schema({
         '--from': Or(None, Use(lambda i: datetime.strptime(i, '%Y-%m-%d')),
                      error='--from=date date should be in the format of YYYY-MM-DD '),
-        '--to': Or(None, Use(lambda i: datetime.strptime(i, '%Y-%m-%d')),
+        '--to': Or(And(None, Use(lambda i: datetime.now())), Use(lambda i: datetime.strptime(i, '%Y-%m-%d')),
                    error='--to=date date should be in the format of YYYY-MM-DD '),
         '--period': Or(None, And(Use(str), lambda s: s in periods),
                        error='--period=string should be a string in ' + ', '.join(periods)),
@@ -381,6 +382,7 @@ def parse_args():
         '--base': Or(None, Use(str)),
         '--quote': Or(None, Use(str)),
         '--type': Or(None, Use(str)),
+        '--proxy': Or(None, Use(bool)),
         '--help': Or(None, Use(bool)),
         '--path': Or(None, And(Use(os.path.realpath), os.path.exists), error='--path=<path> PATH should exist')
     }, ignore_extra_keys=False)
