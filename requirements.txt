@@ -1,9 +1,7 @@
 schema
 docopt
-numpy
-matplotlib
-mpl_finance
 python-guerrillamail
-proxy-requests
 names
 fake-useragent
+proxybroker
+pandas
