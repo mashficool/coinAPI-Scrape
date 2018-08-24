@@ -185,30 +185,24 @@ def parse_args():
 
 def getSymbols():
     print('getSymbols', end='\n' * 2)
+    symbol_ids = []
+    symbols = try_keys(lambda api: api.metadata_list_symbols())
 
-    if len(args['--symbol']) > 0:
-        with open(os.path.join(args['--path'], 'symbol_ids.json'), "w") as f:
-            json.dump(args['--symbol'], f)
+    with open(os.path.join(args['--path'], 'list_symbols.json'), "w") as f:
+        json.dump(symbols, f)
 
-        return args['--symbol']
-    else:
-        symbol_ids = []
-        symbols = try_keys(lambda api: api.metadata_list_symbols())
+    for symbol in symbols:
+        if (len(args['--symbol']) == 0 or symbol['symbol_id'] in args['--symbol']) \
+                and (len(args['--exchange']) == 0 or symbol['exchange_id'] in args['--exchange']) \
+                and (len(args['--type']) == 0 or symbol['symbol_type'] in args['--type']) \
+                and (len(args['--base']) == 0 or symbol['asset_id_base'] in args['--base']) \
+                and (len(args['--quote']) == 0 or symbol['asset_id_quote'] in args['--quote']):
+            symbol_ids.append(symbol['symbol_id'])
 
-        with open(os.path.join(args['--path'], 'list_symbols.json'), "w") as f:
-            json.dump(symbols, f)
+    with open(os.path.join(args['--path'], 'symbol_ids.json'), "w") as f:
+        json.dump(symbol_ids, f)
 
-        for symbol in symbols:
-            if (len(args['--exchange']) == 0 or symbol['exchange_id'] in args['--exchange']) \
-                    and (len(args['--type']) == 0 or symbol['symbol_type'] in args['--type']) \
-                    and (len(args['--base']) == 0 or symbol['asset_id_base'] in args['--base']) \
-                    and (len(args['--quote']) == 0 or symbol['asset_id_quote'] in args['--quote']):
-                symbol_ids.append(symbol['symbol_id'])
-
-        with open(os.path.join(args['--path'], 'symbol_ids.json'), "w") as f:
-            json.dump(symbol_ids, f)
-
-        return symbol_ids
+    return symbol_ids
 
 
 def getTrades(symbols):
@@ -831,6 +825,9 @@ if __name__ == '__main__':
     init_path()
     symbols = getSymbols()
     print(symbols, end='\n' * 2)
+    if len(symbols) == 0:
+        print('No valid symbols found!')
+
     if args['--source'] == 'ohlcv':
         getOhlcv(symbols)
     else:
