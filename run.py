@@ -101,7 +101,7 @@ def generate_keys(num=1):
                  'guerrillamail.de', 'guerrillamail.net', 'guerrillamail.org', 'guerrillamailblock.com', 'pokemail.net',
                  'spam4.me'])
 
-            print(email_address)
+            print("#" + str(i) + ", " + email_address)
 
             url = "https://rest.coinapi.io/www/freeplan"
 
@@ -338,13 +338,16 @@ def try_keys(call):
             if type(results) is list:
                 if len(results) >= 50000:
                     print("key consumed: " + keys.pop(index))
+                    print("remaining keys: " + str(len(keys)))
                 return results
             else:
                 print(results)
                 print("used key: " + keys.pop(index))
+                print("remaining keys: " + str(len(keys)))
         except Exception as e:
             print(e)
             print("used key: " + keys.pop(index))
+            print("remaining keys: " + str(len(keys)))
 
 
 def make_prequest(method='get',
@@ -367,7 +370,7 @@ def make_prequest(method='get',
 
     while True:
         try:
-            if len(proxies_list) == 0:
+            if len(proxies_list) == 0 or (type(proxies_list[0]) != str and len(proxies_list) <= 5):
                 find_proxy(args['--find_n_proxy'])
                 read_proxies()
 
@@ -381,6 +384,7 @@ def make_prequest(method='get',
                 if 400 <= r.status_code < 500:
                     print(r.text)
                     print("used proxy: " + proxies_list.pop(index))
+                    print("remaining proxies: " + str(len(proxies_list)))
                 else:
                     return r
 
@@ -389,10 +393,12 @@ def make_prequest(method='get',
                                      cookies=cookies, proxies=proxies_list[index], json=json, timeout=timeout)
                 if r.status_code >= 400:
                     print("used proxy: " + proxies_list.pop(index)["http"])
+                    print("remaining proxies: " + str(len(proxies_list)))
                 return r
         except Exception as e:
             print(e)
             print("used proxy: " + str(proxies_list.pop(index)))
+            print("remaining proxies: " + str(len(proxies_list)))
 
 
 async def save_proxy(proxies):
@@ -401,10 +407,10 @@ async def save_proxy(proxies):
         proxy = await proxies.get()
         if proxy is None:
             break
-        print(proxy.host)
         list.append(
             {"http": ("http://%s:%d" % (proxy.host, proxy.port)),
              "https": ("https://%s:%d" % (proxy.host, proxy.port))})
+        print("#" + str(len(list)) + ", " + proxy.host)
     with open("proxies.json", "w") as f:
         json.dump(list, f)
 
