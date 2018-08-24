@@ -4,18 +4,19 @@ Example, try:
 python run.py --symbol=BITSTAMP_SPOT_LTC_USD  --source=ohlcv --from=2018-08-23 --proxy_type=rotate --period=1HRS --filetype=csv --timeout=20
 python run.py --exchange=BITSTAMP  --source=ohlcv --from=2018-08-23 --proxy_type=rotate --period=1HRS --filetype=csv --limit=100000
 python run.py --exchange=BITSTAMP  --source=trades --from=2018-08-23 --proxy_type=rotate --period=1HRS --filetype=csv --limit=100000
+python run.py --exchange=BINANCE --quote=USDT,BTC,ETH --base=BTC,ETH,EOS,ONT,BCC,ETC,NANO,TRX,XRP,VET,ADA,NEO,XLM,CMT,LTC,THETA,IOTA,BNB,TUSD,ICX,ZRX,WTC,XMR,ARN,LSK,ZIL,QKC,DASH,IOTX,DOCK,NPXS,NAS,YOYO,QTUM,LINK,GAS,ELF,IOST,LOOM,NCASH,NULS,WAN,REP,GTO,KEY,CVC,DENT,XVG,MDA,POA,BAT,MFT,ENG,XEM,BQX,SNT,PPT,AION,SUB,ADX,BCD,STORM,OMG,MTL,ZEC --source=ohlcv --from=2018-08-23 --to=2018-08-24 --proxy_type=list --period=1HRS --filetype=csv --limit=100000 --timeout=10
 
 
 Usage:
-  run.py (--symbol=<string>... | (--exchange=<string>... | --base=<string>... | --quote=<string>... | --type=<string>...) [--exchange=<string>...] [--base=<string>...] [--quote=<string>...] [--type=<string>...]) --source=<string> --from=<date> [--to=<date>] [--period=<string>]  [--limit=<int>]  [--levels=<int>]  [--path=<path>] [--filetype=<string>] [--proxy_type=<string>] [--timeout=<int>] [--generate_keys=<int>] [--find_n_proxy=<int>]
+  run.py (--symbol=<string> | [--exchange=<string>] [--base=<string>] [--quote=<string>] [--type=<string>]) --source=<string> --from=<date> [--to=<date>] [--period=<string>]  [--limit=<int>]  [--levels=<int>]  [--path=<path>] [--filetype=<string>] [--proxy_type=<string>] [--timeout=<int>] [--generate_keys=<int>] [--find_n_proxy=<int>]
   run.py (-h | --help)
 
 Arguments:
-  --symbol=<string>     Symbol id for requested timeseries, it can be one or more space separated, check https://docs.coinapi.io/#list-all-symbols
-  --exchange=<string>     identifier of the exchange where symbol is traded, it can be one or more space separated, check https://docs.coinapi.io/#list-all-symbols
-  --base=<string>     FX Spot base asset identifier, for derivatives it’s contact underlying (e.g. BTC for BTC/USD), it can be one or more space separated, check https://docs.coinapi.io/#list-all-symbols
-  --quote=<string>     FX Spot quote asset identifier, for derivatives it’s contract underlying (e.g. USD for BTC/USD), it can be one or more space separated, check https://docs.coinapi.io/#list-all-symbols
-  --type=<string>     Type of symbol (possible values are: SPOT, FUTURES or OPTION), it can be one or more space separated
+  --symbol=<string>     Symbol id for requested timeseries, comma separated, check https://docs.coinapi.io/#list-all-symbols
+  --exchange=<string>     identifier of the exchange where symbol is traded, comma separated, check https://docs.coinapi.io/#list-all-symbols
+  --base=<string>     FX Spot base asset identifier, for derivatives it’s contact underlying (e.g. BTC for BTC/USD), comma separated, check https://docs.coinapi.io/#list-all-symbols
+  --quote=<string>     FX Spot quote asset identifier, for derivatives it’s contract underlying (e.g. USD for BTC/USD), comma separated, check https://docs.coinapi.io/#list-all-symbols
+  --type=<string>     Type of symbol (possible values are: SPOT, FUTURES or OPTION), comma separated
   --from=<date>     starting date.
   --source=<string>     the data to be downloaded (ohlcv, trades, quotes, order).
 
@@ -161,16 +162,22 @@ def parse_args():
         '--timeout': Or(None, Use(int)),
         '--find_n_proxy': Or(None, Use(int)),
         '--generate_keys': Or(None, Use(int)),
-        '--symbol': Or(None, Use(list)),
-        '--exchange': Or(None, Use(list)),
-        '--base': Or(None, Use(list)),
-        '--quote': Or(None, Use(list)),
-        '--type': Or(None, Use(list)),
+        '--symbol': Or(None, Use(str)),
+        '--exchange': Or(None, Use(str)),
+        '--base': Or(None, Use(str)),
+        '--quote': Or(None, Use(str)),
+        '--type': Or(None, Use(str)),
         '--help': Or(None, Use(bool)),
         '--path': Or(None, And(Use(os.path.realpath), os.path.exists), error='--path=<path> PATH should exist')
     }, ignore_extra_keys=False)
     try:
-        return schema.validate(arguments)
+        validate = schema.validate(arguments)
+        validate['--symbol'] = validate['--symbol'] and validate['--symbol'].split(',') or []
+        validate['--exchange'] = validate['--exchange'] and validate['--exchange'].split(',') or []
+        validate['--base'] = validate['--base'] and validate['--base'].split(',') or []
+        validate['--quote'] = validate['--quote'] and validate['--quote'].split(',') or []
+        validate['--type'] = validate['--type'] and validate['--type'].split(',') or []
+        return validate
     except SchemaError as e:
         exit(e)
 
@@ -195,7 +202,7 @@ def getSymbols():
                 symbol_ids.append(symbol['symbol_id'])
 
         with open(os.path.join(args['--path'], 'symbol_ids.json'), "w") as f:
-            json.dump(symbols, f)
+            json.dump(symbol_ids, f)
 
         return symbol_ids
 
@@ -205,6 +212,7 @@ def getTrades(symbols):
 
     list = {}
     for symbol in symbols:
+        print(symbol)
         next_start = args['--from'].isoformat().split('.')[0]
         symbol_list = []
         while dateutil.parser.parse(next_start).date() < args['--to'].date():
@@ -232,6 +240,7 @@ def getOrder(symbols):
 
     list = {}
     for symbol in symbols:
+        print(symbol)
         next_start = args['--from'].isoformat().split('.')[0]
         symbol_list = []
         while dateutil.parser.parse(next_start).date() < args['--to'].date():
@@ -261,6 +270,7 @@ def getQuotes(symbols):
 
     list = {}
     for symbol in symbols:
+        print(symbol)
         next_start = args['--from'].isoformat().split('.')[0]
         symbol_list = []
         while dateutil.parser.parse(next_start).date() < args['--to'].date():
@@ -288,6 +298,7 @@ def getOhlcv(symbols):
 
     list = {}
     for symbol in symbols:
+        print(symbol)
         next_start = args['--from'].isoformat().split('.')[0]
         symbol_list = []
         while dateutil.parser.parse(next_start).date() < args['--to'].date():
@@ -317,7 +328,7 @@ def try_keys(call):
     while True:
         try:
             if len(keys) == 0:
-                generate_keys(3)
+                generate_keys(args['--generate_keys'] or 5)
 
             index = random.randint(0, len(keys) - 1)
             api = CoinAPIv1(keys[index])
@@ -782,7 +793,7 @@ def init_path():
     args['--path'] = os.path.join(args['--path'], args['--source'] + '_' + datetime.now().strftime("%Y%m%d-%H%M%S"))
     os.makedirs(args['--path'], exist_ok=True)
     with open(os.path.join(args['--path'], 'args.json'), "w") as f:
-        json.dump(args, f)
+        json.dump(repr(args), f)
 
 
 def save_df(df, filename, columns=None, header=True):
