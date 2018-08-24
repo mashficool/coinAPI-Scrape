@@ -9,7 +9,7 @@ python run.py --exchange=BINANCE --quote=USDT,BTC,ETH --base=BTC,ETH,EOS,ONT,BCC
 
 
 Usage:
-  run.py (--symbol=<string> | [--exchange=<string>] [--base=<string>] [--quote=<string>] [--type=<string>]) --source=<string> --from=<date> [--to=<date>] [--period=<string>]  [--limit=<int>]  [--levels=<int>]  [--path=<path>] [--filetype=<string>] [--proxy_type=<string>] [--timeout=<int>] [--generate_keys=<int>] [--find_n_proxy=<int>]
+  run.py (--symbol=<string> | [--exchange=<string>] [--base=<string>] [--quote=<string>] [--type=<string>]) --source=<string> --from=<date> [--to=<date>] [--period=<string>]  [--limit=<int>]  [--levels=<int>]  [--path=<path>] [--filetype=<string>] [--proxy_type=<string>] [--timeout=<int>] [--generate_keys=<int>] [--find_n_proxy=<int>] [--proxy_dnsbl] [--proxy_strict]
   run.py (-h | --help)
 
 Arguments:
@@ -33,6 +33,8 @@ Options:
   --generate_keys=<int>  generate N new coinapi keys.
   --find_n_proxy=<int>  number of proxies to find at a time [default: 100].
   --proxy_type=<string>  type of proxy (None, fresh, list, rotate) [default: None].
+  --proxy_dnsbl  Check proxy in spam databases (DNSBL) [default: False].
+  --proxy_strict  strict proxy search [default: False].
 
 """
 
@@ -98,7 +100,7 @@ def generate_keys(num=1):
                 ['sharklasers.com', 'guerrillamail.info', 'grr.la', 'guerrillamail.biz', 'guerrillamail.com',
                  'guerrillamail.de', 'guerrillamail.net', 'guerrillamail.org', 'guerrillamailblock.com', 'pokemail.net',
                  'spam4.me'])
-            print('_' * 10)
+
             print(email_address)
 
             url = "https://rest.coinapi.io/www/freeplan"
@@ -168,6 +170,8 @@ def parse_args():
         '--base': Or(None, Use(str)),
         '--quote': Or(None, Use(str)),
         '--type': Or(None, Use(str)),
+        '--proxy_dnsbl': Or(None, Use(bool)),
+        '--proxy_strict': Or(None, Use(bool)),
         '--help': Or(None, Use(bool)),
         '--path': Or(None, And(Use(os.path.realpath), os.path.exists), error='--path=<path> PATH should exist')
     }, ignore_extra_keys=False)
@@ -355,43 +359,40 @@ def make_prequest(method='get',
     ua = UserAgent()
     headers.update({'User-Agent': ua.random})
 
-    index = 0
-    if proxy_type == 'list' or proxy_type == 'fresh':
-        while True:
-            try:
-                if len(proxies_list) == 0:
-                    find_proxy(args['--find_n_proxy'])
-                    read_proxies()
+    if proxy_type == 'None':
+        return requests.request(method=method, url=url, headers=headers, data=data, params=params, auth=auth,
+                                cookies=cookies, proxies=proxies, json=json, timeout=timeout)
 
-                index = random.randint(0, len(proxies_list) - 1)
-                r = requests.request(method=method, url=url, headers=headers, data=data, params=params, auth=auth,
-                                     cookies=cookies, proxies=proxies_list[index], json=json, timeout=timeout)
-                if r.status_code >= 400:
-                    print("used proxy: " + proxies_list.pop(index)["http"])
-                return r
-            except Exception as e:
-                print(e)
-                print("used proxy: " + proxies_list.pop(index)["http"])
-    elif proxy_type == 'rotate':
-        while len(proxies_list) > 0:
-            try:
-                index = random.randint(0, len(proxies_list) - 1)
+    index = 0
+
+    while True:
+        try:
+            if len(proxies_list) == 0:
+                find_proxy(args['--find_n_proxy'])
+                read_proxies()
+
+            index = random.randint(0, len(proxies_list) - 1)
+            if type(proxies_list[index]) == str:
                 r = requests.request(method=method, url=proxies_list[index] + urllib.parse.quote_plus(url),
                                      headers=headers,
                                      data=data,
                                      params=params, auth=auth,
-                                     cookies=cookies, json=json, timeout=timeout)
+                                     cookies=cookies, json=json, timeout=(timeout if timeout >= 60 else 120))
                 if 400 <= r.status_code < 500:
                     print(r.text)
                     print("used proxy: " + proxies_list.pop(index))
                 else:
                     return r
-            except Exception as e:
-                print(e)
-                print("used proxy: " + proxies_list.pop(index))
-    else:
-        return requests.request(method=method, url=url, headers=headers, data=data, params=params, auth=auth,
-                                cookies=cookies, proxies=proxies, json=json, timeout=timeout)
+
+            else:
+                r = requests.request(method=method, url=url, headers=headers, data=data, params=params, auth=auth,
+                                     cookies=cookies, proxies=proxies_list[index], json=json, timeout=timeout)
+                if r.status_code >= 400:
+                    print("used proxy: " + proxies_list.pop(index)["http"])
+                return r
+        except Exception as e:
+            print(e)
+            print("used proxy: " + str(proxies_list.pop(index)))
 
 
 async def save_proxy(proxies):
@@ -426,8 +427,13 @@ def find_proxy(limit=1000):
     print('find_proxy', end='\n' * 2)
     proxies = asyncio.Queue()
     broker = Broker(proxies)
-    tasks = asyncio.gather(broker.find(types=['HTTP', 'HTTPS'], limit=limit),
-                           save_proxy(proxies))
+
+    dnsbl = ['bl.spamcop.net', 'cbl.abuseat.org', 'dnsbl.sorbs.net',
+             'zen.spamhaus.org', 'bl.mcafee.com', 'spam.spamrats.com'] if args['--proxy_dnsbl'] else None
+
+    tasks = asyncio.gather(
+        broker.find(types=['HTTP', 'HTTPS'], limit=limit, strict=args['--proxy_strict'], dnsbl=dnsbl),
+        save_proxy(proxies))
     loop = asyncio.get_event_loop()
     loop.run_until_complete(tasks)
 
