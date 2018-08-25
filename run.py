@@ -10,6 +10,7 @@ python run.py --exchange=BINANCE --quote=USDT,BTC,ETH --base=BTC,ETH,EOS,ONT,BCC
 
 Usage:
   run.py (--symbol=<string> | [--exchange=<string>] [--base=<string>] [--quote=<string>] [--type=<string>]) --source=<string> --from=<date> [--to=<date>] [--period=<string>]  [--limit=<int>]  [--levels=<int>]  [--path=<path>] [--filetype=<string>] [--proxy_type=<string>] [--timeout=<int>] [--generate_keys=<int>] [--find_n_proxy=<int>] [--proxy_dnsbl] [--proxy_strict]
+  run.py --continue [--path=<path>]
   run.py (-h | --help)
 
 Arguments:
@@ -35,6 +36,7 @@ Options:
   --proxy_type=<string>  type of proxy (None, fresh, list, rotate) [default: None].
   --proxy_dnsbl  Check proxy in spam databases (DNSBL) [default: False].
   --proxy_strict  strict proxy search [default: False].
+  --continue  continue the last run [default: False].
 
 """
 
@@ -50,6 +52,8 @@ import urllib
 import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta
+from json import JSONDecoder
+from json import JSONEncoder
 from time import sleep
 
 import dateutil.parser
@@ -180,6 +184,7 @@ def parse_args():
         '--type': Or(None, Use(str)),
         '--proxy_dnsbl': Or(None, Use(bool)),
         '--proxy_strict': Or(None, Use(bool)),
+        '--continue': Or(None, Use(bool)),
         '--help': Or(None, Use(bool)),
         '--path': Or(None, And(Use(os.path.realpath), os.path.exists), error='--path=<path> PATH should exist')
     }, ignore_extra_keys=False)
@@ -217,119 +222,100 @@ def getSymbols():
     return symbol_ids
 
 
-def getTrades(symbols):
+def getTrades(symbol):
     print('getTrades', end='\n' * 2)
 
-    list = {}
-    for symbol in symbols:
-        print(symbol)
-        next_start = args['--from'].isoformat().split('.')[0]
-        symbol_list = []
-        while dateutil.parser.parse(next_start).date() < args['--to'].date():
-            data = try_keys(lambda api: api.trades_historical_data(symbol, {'time_start': next_start,
-                                                                            'time_end':
-                                                                                args['--to'].isoformat().split('.')[0],
-                                                                            'limit': args['--limit']}))
-            if len(data) == 0:
-                break
-            next_start = data[-1]['time_coinapi'].split('.')[0]
-            symbol_list.extend(data)
+    print(symbol)
+    next_start = args['--from'].isoformat().split('.')[0]
+    symbol_list = []
+    while dateutil.parser.parse(next_start).date() < args['--to'].date():
+        data = try_keys(lambda api: api.trades_historical_data(symbol, {'time_start': next_start,
+                                                                        'time_end':
+                                                                            args['--to'].isoformat().split('.')[0],
+                                                                        'limit': args['--limit']}))
+        if len(data) == 0:
+            break
+        next_start = data[-1]['time_coinapi'].split('.')[0]
+        symbol_list.extend(data)
 
-        data_frame = pd.DataFrame.from_dict(symbol_list)
-        list.update({symbol: data_frame})
-        save_df(data_frame, symbol)
+    data_frame = pd.DataFrame.from_dict(symbol_list)
 
-        if args['--period']:
-            print('period')
+    save_df(data_frame, symbol)
 
-    return list
+    return data_frame
 
 
-def getOrder(symbols):
+def getOrder(symbol):
     print('getOrder', end='\n' * 2)
 
-    list = {}
-    for symbol in symbols:
-        print(symbol)
-        next_start = args['--from'].isoformat().split('.')[0]
-        symbol_list = []
-        while dateutil.parser.parse(next_start).date() < args['--to'].date():
-            data = try_keys(lambda api: api.orderbooks_historical_data(symbol, {'time_start': next_start,
-                                                                                'time_end':
-                                                                                    args['--to'].isoformat().split('.')[
-                                                                                        0],
-                                                                                'limit': args['--limit'],
-                                                                                'limit_levels': args['--levels']}))
-            if len(data) == 0:
-                break
-            next_start = data[-1]['time_coinapi'].split('.')[0]
-            symbol_list.extend(data)
+    print(symbol)
+    next_start = args['--from'].isoformat().split('.')[0]
+    symbol_list = []
+    while dateutil.parser.parse(next_start).date() < args['--to'].date():
+        data = try_keys(lambda api: api.orderbooks_historical_data(symbol, {'time_start': next_start,
+                                                                            'time_end':
+                                                                                args['--to'].isoformat().split('.')[
+                                                                                    0],
+                                                                            'limit': args['--limit'],
+                                                                            'limit_levels': args['--levels']}))
+        if len(data) == 0:
+            break
+        next_start = data[-1]['time_coinapi'].split('.')[0]
+        symbol_list.extend(data)
 
-        data_frame = pd.DataFrame.from_dict(symbol_list)
-        list.update({symbol: data_frame})
-        save_df(data_frame, symbol)
+    data_frame = pd.DataFrame.from_dict(symbol_list)
+    save_df(data_frame, symbol)
 
-        if args['--period']:
-            print('period')
-
-    return list
+    return data_frame
 
 
-def getQuotes(symbols):
+def getQuotes(symbol):
     print('getQuotes', end='\n' * 2)
 
-    list = {}
-    for symbol in symbols:
-        print(symbol)
-        next_start = args['--from'].isoformat().split('.')[0]
-        symbol_list = []
-        while dateutil.parser.parse(next_start).date() < args['--to'].date():
-            data = try_keys(lambda api: api.quotes_historical_data(symbol, {'time_start': next_start,
-                                                                            'time_end':
-                                                                                args['--to'].isoformat().split('.')[0],
-                                                                            'limit': args['--limit']}))
-            if len(data) == 0:
-                break
-            next_start = data[-1]['time_coinapi'].split('.')[0]
-            symbol_list.extend(data)
+    print(symbol)
+    next_start = args['--from'].isoformat().split('.')[0]
+    symbol_list = []
+    while dateutil.parser.parse(next_start).date() < args['--to'].date():
+        data = try_keys(lambda api: api.quotes_historical_data(symbol, {'time_start': next_start,
+                                                                        'time_end':
+                                                                            args['--to'].isoformat().split('.')[0],
+                                                                        'limit': args['--limit']}))
+        if len(data) == 0:
+            break
+        next_start = data[-1]['time_coinapi'].split('.')[0]
+        symbol_list.extend(data)
 
-        data_frame = pd.DataFrame.from_dict(symbol_list)
-        list.update({symbol: data_frame})
-        save_df(data_frame, symbol)
+    data_frame = pd.DataFrame.from_dict(symbol_list)
+    save_df(data_frame, symbol)
 
-        if args['--period']:
-            print('period')
-
-    return list
+    return data_frame
 
 
-def getOhlcv(symbols):
+def getOhlcv(symbol):
     print('getOhlcv', end='\n' * 2)
 
-    list = {}
-    for symbol in symbols:
-        print(symbol)
-        next_start = args['--from'].isoformat().split('.')[0]
-        symbol_list = []
-        while dateutil.parser.parse(next_start).date() < args['--to'].date():
-            data = try_keys(lambda api: api.ohlcv_historical_data(symbol, {'time_start': next_start,
-                                                                           'time_end':
-                                                                               args['--to'].isoformat().split('.')[0],
-                                                                           'limit': args['--limit'],
-                                                                           'period_id': args['--period'] or '1MIN'}))
-            if len(data) == 0:
-                break
-            next_start = data[-1]['time_period_end'].split('.')[0]
-            symbol_list.extend(data)
+    print(symbol)
+    next_start = args['--from'].isoformat().split('.')[0]
+    symbol_list = []
+    while dateutil.parser.parse(next_start).date() < args['--to'].date():
+        data = try_keys(lambda api: api.ohlcv_historical_data(symbol, {'time_start': next_start,
+                                                                       'time_end':
+                                                                           args['--to'].isoformat().split('.')[0],
+                                                                       'limit': args['--limit'],
+                                                                       'period_id': args['--period'] or '1MIN'}))
+        if len(data) == 0:
+            break
+        next_start = data[-1]['time_period_end'].split('.')[0]
+        symbol_list.extend(data)
 
-        data_frame = pd.DataFrame.from_dict(symbol_list)
-        list.update({symbol: data_frame})
-        save_df(data_frame, symbol,
-                columns=['time_open', 'price_close', 'volume_traded', 'price_open', 'price_high', 'price_low',
-                         'trades_count'],
-                header=['Date', 'Close', 'Volume', 'Open', 'High', 'Low', 'Market Cap'])
+    data_frame = pd.DataFrame.from_dict(symbol_list)
 
-    return list
+    save_df(data_frame, symbol,
+            columns=['time_open', 'price_close', 'volume_traded', 'price_open', 'price_high', 'price_low',
+                     'trades_count'],
+            header=['Date', 'Close', 'Volume', 'Open', 'High', 'Low', 'Market Cap'])
+
+    return data_frame
 
 
 def try_keys(call):
@@ -840,11 +826,52 @@ class CoinAPIv1:
         return client.perform()
 
 
+class DateTimeDecoder(json.JSONDecoder):
+
+    def __init__(self, *args, **kargs):
+        JSONDecoder.__init__(self, object_hook=self.dict_to_object,
+                             *args, **kargs)
+
+    def dict_to_object(self, d):
+        if '__type__' not in d:
+            return d
+
+        type = d.pop('__type__')
+        try:
+            dateobj = datetime(**d)
+            return dateobj
+        except:
+            d['__type__'] = type
+            return d
+
+
+class DateTimeEncoder(JSONEncoder):
+    """ Instead of letting the default encoder convert datetime to string,
+        convert datetime objects into a dict, which can be decoded by the
+        DateTimeDecoder
+    """
+
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return {
+                '__type__': 'datetime',
+                'year': obj.year,
+                'month': obj.month,
+                'day': obj.day,
+                'hour': obj.hour,
+                'minute': obj.minute,
+                'second': obj.second,
+                'microsecond': obj.microsecond,
+            }
+        else:
+            return JSONEncoder.default(self, obj)
+
+
 def init_path():
     args['--path'] = os.path.join(args['--path'], args['--source'] + '_' + datetime.now().strftime("%Y%m%d-%H%M%S"))
     os.makedirs(args['--path'], exist_ok=True)
     with open(os.path.join(args['--path'], 'args.json'), "w") as f:
-        json.dump(repr(args), f)
+        json.dump(args, f, cls=DateTimeEncoder)
 
 
 def save_df(df, filename, columns=None, header=True):
@@ -857,10 +884,38 @@ def save_df(df, filename, columns=None, header=True):
         df.to_json(file_path, orient='records')
 
 
+def loop_symbols(symbols, call):
+    while len(symbols) > 0:
+        call(symbols[0])
+
+        with open(os.path.join(args['--path'], "remaining_symbols.json"), "w") as f:
+            symbols.pop(0)
+            json.dump(symbols, f)
+
+
+def convert_period(df):
+    print('convert_period')
+    return df
+
+
 if __name__ == '__main__':
     start_exec = datetime.now()
     args = parse_args()
-    print(args, end='\n' * 5)
+    print(args, end='\n' * 2)
+
+    if args['--continue']:
+        try:
+            latest_subdir = max([os.path.join(args['--path'], d) for d in os.listdir(args['--path'])],
+                                key=os.path.getmtime)
+        except Exception as e:
+            print(e)
+            print('cant find the last run')
+            exit()
+
+        with open(os.path.join(args['--path'], latest_subdir, 'args.json'), "r") as f:
+            args = json.load(f, cls=DateTimeDecoder)
+            args['--continue'] = True
+
     keys = readKeys()
     timeout = args['--timeout'] if args['--timeout'] != 0 else None
     proxy_type = args['--proxy_type']
@@ -876,20 +931,26 @@ if __name__ == '__main__':
     if args['--generate_keys']:
         generate_keys(args['--generate_keys'])
 
-    init_path()
-    symbols = getSymbols()
+    if args['--continue']:
+        with open(os.path.join(args['--path'], "remaining_symbols.json"), "r") as f:
+            symbols = json.load(f)
+    else:
+        init_path()
+        symbols = getSymbols()
+
     print(symbols, end='\n' * 2)
     if len(symbols) == 0:
-        print('No valid symbols found!')
+        print('No valid/remaining symbols found!')
+        exit()
 
     if args['--source'] == 'ohlcv':
-        getOhlcv(symbols)
+        loop_symbols(symbols, lambda symbol: getOhlcv(symbol))
     else:
         if args['--source'] == 'trades':
-            getTrades(symbols)
+            loop_symbols(symbols, lambda symbol: convert_period(getTrades(symbol)))
         elif args['--source'] == 'quotes':
-            getQuotes(symbols)
+            loop_symbols(symbols, lambda symbol: convert_period(getQuotes(symbol)))
         elif args['--source'] == 'order':
-            getOrder(symbols)
+            loop_symbols(symbols, lambda symbol: convert_period(getOrder(symbol)))
 
     print('DONE, Took: ', timedelta(seconds=(datetime.now() - start_exec).total_seconds()))
