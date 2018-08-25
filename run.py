@@ -119,7 +119,7 @@ def generate_keys(num=1):
             while True:
                 try:
                     print('waiting for mail')
-                    sleep(5)
+                    sleep(random.randint(5, 25))
                     email_list = session.get_email_list()
                     message = email_list[0].excerpt
                     matchObj = re.search(r'API Key: (.*)', message, re.M | re.I)
@@ -143,7 +143,7 @@ def generate_keys(num=1):
         except  Exception as e:
             print(e)
             print('generate_keys_sleeping...')
-            sleep(random.randint(3, 60))
+            sleep(random.randint(10, 60))
 
 
 def readKeys():
@@ -342,16 +342,21 @@ def try_keys(call):
 
             index = random.randint(0, len(keys) - 1)
             api = CoinAPIv1(keys[index])
-            results = call(api)
+            response = call(api)
+            results = json.loads(response.text)
+
             if type(results) is list:
-                if len(results) >= 50000:
-                    print("key consumed: " + keys.pop(index))
+                if response.headers.get('X-RateLimit-Remaining', None) == 0:
+                    print("used key: " + keys.pop(index))
                     print("remaining keys: " + str(len(keys)))
+
                 return results
             else:
                 print(results)
-                print("used key: " + keys.pop(index))
-                print("remaining keys: " + str(len(keys)))
+                if 'many requests'.lower() in response.text.lower() or 'Invalid API key'.lower() in response.text.lower() \
+                        or response.headers.get('X-RateLimit-Remaining', None) == 0:
+                    print("used key: " + keys.pop(index))
+                    print("remaining keys: " + str(len(keys)))
         except Exception as e:
             print(e)
             print("used key: " + keys.pop(index))
@@ -395,7 +400,7 @@ def make_prequest(method='get',
                                      data=data,
                                      params=params, auth=auth,
                                      cookies=cookies, json=json, timeout=(timeout if timeout >= 60 else 120))
-                if 400 <= r.status_code < 500:
+                if r.status_code == 403 or r.status_code == 429:
                     print(r.text)
                     print("used proxy: " + proxies_list.pop(index))
                     print("remaining proxies: " + str(len(proxies_list)))
@@ -497,9 +502,7 @@ class HTTPClient:
             query_string = urllib.parse.urlencode(self.params)
             resource = '%s?%s' % (self.url, query_string)
 
-        raw_response = make_prequest(url=resource).text
-        response = json.loads(raw_response)
-        return response
+        return make_prequest(url=resource)
 
 
 class MetadataListExchangesRequest:
