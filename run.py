@@ -432,16 +432,22 @@ async def save_proxy(proxies):
 
 def read_proxies():
     global proxies_list
-    with open("proxies.json", "r") as f:
-        proxies_list = json.load(f)
-        return proxies_list
+    try:
+        with open("proxies.json", "r") as f:
+            proxies_list = json.load(f)
+            return proxies_list
+    except Exception as e:
+        print(e)
 
 
 def read_rproxies():
     global proxies_list
-    with open("rproxy.json", "r") as f:
-        proxies_list = json.load(f)
-        return proxies_list
+    try:
+        with open("rproxy.json", "r") as f:
+            proxies_list = json.load(f)
+            return proxies_list
+    except Exception as e:
+        print(e)
 
 
 def find_proxy(limit=1000):
