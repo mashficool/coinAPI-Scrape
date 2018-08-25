@@ -399,7 +399,8 @@ def make_prequest(method='get',
                                      headers=headers,
                                      data=data,
                                      params=params, auth=auth,
-                                     cookies=cookies, json=json, timeout=(timeout if timeout >= 60 else 120))
+                                     cookies=cookies, json=json,
+                                     timeout=(timeout if timeout and timeout >= 60 else 120))
                 if r.status_code == 403 or r.status_code == 429:
                     print(r.status_code + ' ' + r.text)
                     print("used proxy: " + proxies_list.pop(index))
@@ -860,7 +861,7 @@ if __name__ == '__main__':
     args = parse_args()
     print(args, end='\n' * 5)
     keys = readKeys()
-    timeout = args['--timeout']
+    timeout = args['--timeout'] if args['--timeout'] != 0 else None
     proxy_type = args['--proxy_type']
 
     if proxy_type == 'fresh':
