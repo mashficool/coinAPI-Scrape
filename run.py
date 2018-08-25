@@ -27,7 +27,7 @@ Options:
   --filetype=<string>  the saved data file type (json, csv) [default: csv].
   --to=<date>  ending date.
   --period=<string>  supported time periods available for requesting OHLCV timeseries data OR to convert data to, check https://docs.coinapi.io/#list-all-periods.
-  --limit=<int>  Amount of items to return , minimum is 1, maximum is 100000 [default: 100].
+  --limit=<int>  Amount of items to return , minimum is 1, maximum is 100000 [default: 100000].
   --levels=<int>  Maximum amount of levels from each side of the book to include in response, max 20 [default: 20].
   --timeout=<int>  request timeout [default: 120].
   --generate_keys=<int>  generate N new coinapi keys.
@@ -346,15 +346,15 @@ def try_keys(call):
             results = json.loads(response.text)
 
             if type(results) is list:
-                if response.headers.get('X-RateLimit-Remaining', None) == 0:
-                    print("used key: " + keys.pop(index))
+                if response.headers.get('X-RateLimit-Remaining', None) == '0':
+                    print("consumed key: " + keys.pop(index))
                     print("remaining keys: " + str(len(keys)))
 
                 return results
             else:
                 print(results)
                 if 'many requests'.lower() in response.text.lower() or 'Invalid API key'.lower() in response.text.lower() \
-                        or response.headers.get('X-RateLimit-Remaining', None) == 0:
+                        or response.headers.get('X-RateLimit-Remaining', None) == '0':
                     print("used key: " + keys.pop(index))
                     print("remaining keys: " + str(len(keys)))
         except Exception as e:
@@ -401,7 +401,7 @@ def make_prequest(method='get',
                                      params=params, auth=auth,
                                      cookies=cookies, json=json, timeout=(timeout if timeout >= 60 else 120))
                 if r.status_code == 403 or r.status_code == 429:
-                    print(r.text)
+                    print(r.status_code + ' ' + r.text)
                     print("used proxy: " + proxies_list.pop(index))
                     print("remaining proxies: " + str(len(proxies_list)))
                 else:
@@ -411,6 +411,7 @@ def make_prequest(method='get',
                 r = requests.request(method=method, url=url, headers=headers, data=data, params=params, auth=auth,
                                      cookies=cookies, proxies=proxies_list[index], json=json, timeout=timeout)
                 if r.status_code >= 400:
+                    print(r.status_code + ' ' + r.text)
                     print("used proxy: " + proxies_list.pop(index)["http"])
                     print("remaining proxies: " + str(len(proxies_list)))
                 return r
