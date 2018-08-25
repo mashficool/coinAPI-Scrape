@@ -27,7 +27,7 @@ Options:
   --filetype=<string>  the saved data file type (json, csv) [default: csv].
   --to=<date>  ending date.
   --period=<string>  supported time periods available for requesting OHLCV timeseries data OR to convert data to, check https://docs.coinapi.io/#list-all-periods.
-  --limit=<int>  Amount of items to return , minimum is 1, maximum is 100000 [default: 100000].
+  --limit=<int>  Amount of items to return , minimum is 1, maximum is 100000 [default: 10000].
   --levels=<int>  Maximum amount of levels from each side of the book to include in response, max 20 [default: 20].
   --timeout=<int>  request timeout [default: 120].
   --generate_keys=<int>  generate N new coinapi keys.
