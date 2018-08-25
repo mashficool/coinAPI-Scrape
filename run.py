@@ -40,9 +40,6 @@ Options:
 
 """
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import asyncio
 import json
 import os
@@ -52,21 +49,20 @@ import urllib
 import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta
-from json import JSONDecoder
-from json import JSONEncoder
+from json import JSONDecoder, JSONEncoder
 from time import sleep
 
 import dateutil.parser
 import requests
-from proxybroker.resolver import Resolver
 
 try:
     from docopt import docopt
-    from schema import Schema, And, Or, Use, SchemaError, Optional
+    from schema import Schema, And, Or, Use, SchemaError
     import names
     from guerrillamail import GuerrillaMailSession, GuerrillaMailException
     from fake_useragent import UserAgent
     from proxybroker import Broker
+    from proxybroker.resolver import Resolver
     import pandas as pd
 except ImportError:
     exit('One or more of the required libraries is missing\n'
