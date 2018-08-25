@@ -310,10 +310,13 @@ def getOhlcv(symbol):
 
     data_frame = pd.DataFrame.from_dict(symbol_list)
 
-    save_df(data_frame, symbol,
-            columns=['time_open', 'price_close', 'volume_traded', 'price_open', 'price_high', 'price_low',
-                     'trades_count'],
-            header=['Date', 'Close', 'Volume', 'Open', 'High', 'Low', 'Market Cap'])
+    if len(data_frame.index) > 0:
+        save_df(data_frame, symbol,
+                columns=['time_open', 'price_close', 'volume_traded', 'price_open', 'price_high', 'price_low',
+                         'trades_count'],
+                header=['Date', 'Close', 'Volume', 'Open', 'High', 'Low', 'Market Cap'])
+    else:
+        print('no data to save')
 
     return data_frame
 
@@ -896,6 +899,10 @@ def loop_symbols(symbols, call):
 
 def convert_period(df):
     print('convert_period')
+    if len(df.index) > 0:
+        pass
+    else:
+        print('no data to save')
     return df
 
 
