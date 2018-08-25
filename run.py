@@ -336,6 +336,7 @@ def try_keys(call):
                     print("consumed key: " + keys.pop(index))
                     print("remaining keys: " + str(len(keys)))
 
+                print("received records: ", len(results))
                 return results
             else:
                 print(results)
