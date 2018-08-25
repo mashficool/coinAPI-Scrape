@@ -49,7 +49,7 @@ import re
 import urllib
 import urllib.parse
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta
 from time import sleep
 
 import dateutil.parser
@@ -858,6 +858,7 @@ def save_df(df, filename, columns=None, header=True):
 
 
 if __name__ == '__main__':
+    start_exec = datetime.now()
     args = parse_args()
     print(args, end='\n' * 5)
     keys = readKeys()
@@ -891,4 +892,4 @@ if __name__ == '__main__':
         elif args['--source'] == 'order':
             getOrder(symbols)
 
-    print('DONE')
+    print('DONE, Took: ', timedelta(seconds=(datetime.now() - start_exec).total_seconds()))
