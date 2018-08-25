@@ -460,6 +460,15 @@ def find_proxy(limit=1000):
     while True:
         try:
             print('find_proxy', end='\n' * 2)
+            Resolver._ip_hosts = [
+                'https://wtfismyip.com/text',
+                'https://api.ipify.org/',
+                'https://ipinfo.io/ip',
+                'https://ipv4.icanhazip.com/',
+                'https://myexternalip.com/raw',
+                'https://ipinfo.io/ip',
+                'https://ifconfig.io/ip'
+            ]
             proxies = asyncio.Queue()
             broker = Broker(proxies)
 
@@ -475,15 +484,6 @@ def find_proxy(limit=1000):
         except  Exception as e:
             print(e)
             print('find_proxy_sleeping...')
-            Resolver._ip_hosts = [
-                'https://wtfismyip.com/text',
-                'http://api.ipify.org/',
-                'http://ipinfo.io/ip',
-                'http://ipv4.icanhazip.com/',
-                'http://myexternalip.com/raw',
-                'http://ipinfo.io/ip',
-                'http://ifconfig.io/ip',
-            ]
             sleep(random.randint(3, 15))
 
 
