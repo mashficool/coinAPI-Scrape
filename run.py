@@ -54,12 +54,13 @@ from time import sleep
 
 import dateutil.parser
 import requests
+from proxybroker.resolver import Resolver
 
 try:
     from docopt import docopt
     from schema import Schema, And, Or, Use, SchemaError, Optional
     import names
-    from guerrillamail import GuerrillaMailSession
+    from guerrillamail import GuerrillaMailSession, GuerrillaMailException
     from fake_useragent import UserAgent
     from proxybroker import Broker
     import pandas as pd
@@ -116,14 +117,20 @@ def generate_keys(num=1):
                 continue
 
             while True:
-                sleep(5)
-                email_list = session.get_email_list()
-                message = email_list[0].excerpt
-                matchObj = re.search(r'API Key: (.*)', message, re.M | re.I)
-                key = matchObj and matchObj.group(1)
-                if (key):
-                    break
-                print('waiting for mail')
+                try:
+                    print('waiting for mail')
+                    sleep(5)
+                    email_list = session.get_email_list()
+                    message = email_list[0].excerpt
+                    matchObj = re.search(r'API Key: (.*)', message, re.M | re.I)
+                    key = matchObj and matchObj.group(1)
+                    if (key):
+                        break
+                except GuerrillaMailException as e:
+                    print(e)
+                    raise Exception(e)
+                except Exception as e:
+                    print(e)
 
             i += 1
             print(key)
@@ -135,7 +142,8 @@ def generate_keys(num=1):
                 json.dump(tmpKeys, f)
         except  Exception as e:
             print(e)
-            sleep(random.randint(10, 60))
+            print('generate_keys_sleeping...')
+            sleep(random.randint(3, 60))
 
 
 def readKeys():
@@ -363,8 +371,14 @@ def make_prequest(method='get',
     headers.update({'User-Agent': ua.random})
 
     if proxy_type == 'None':
-        return requests.request(method=method, url=url, headers=headers, data=data, params=params, auth=auth,
-                                cookies=cookies, proxies=proxies, json=json, timeout=timeout)
+        while True:
+            try:
+                return requests.request(method=method, url=url, headers=headers, data=data, params=params, auth=auth,
+                                        cookies=cookies, proxies=proxies, json=json, timeout=timeout)
+            except Exception as e:
+                print(e)
+                print('make_prequest_sleeping...')
+                sleep(random.randint(3, 15))
 
     index = 0
 
@@ -404,13 +418,19 @@ def make_prequest(method='get',
 async def save_proxy(proxies):
     list = []
     while True:
-        proxy = await proxies.get()
-        if proxy is None:
-            break
-        list.append(
-            {"http": ("http://%s:%d" % (proxy.host, proxy.port)),
-             "https": ("https://%s:%d" % (proxy.host, proxy.port))})
-        print("#" + str(len(list)) + ", " + proxy.host)
+        try:
+            proxy = await proxies.get()
+            if proxy is None:
+                break
+            list.append(
+                {"http": ("http://%s:%d" % (proxy.host, proxy.port)),
+                 "https": ("https://%s:%d" % (proxy.host, proxy.port))})
+            print("#" + str(len(list)) + ", " + proxy.host)
+        except  Exception as e:
+            print(e)
+            print('save_proxy_sleeping...')
+            sleep(random.randint(3, 15))
+
     with open("proxies.json", "w") as f:
         json.dump(list, f)
 
@@ -430,18 +450,34 @@ def read_rproxies():
 
 
 def find_proxy(limit=1000):
-    print('find_proxy', end='\n' * 2)
-    proxies = asyncio.Queue()
-    broker = Broker(proxies)
+    while True:
+        try:
+            print('find_proxy', end='\n' * 2)
+            proxies = asyncio.Queue()
+            broker = Broker(proxies)
 
-    dnsbl = ['bl.spamcop.net', 'cbl.abuseat.org', 'dnsbl.sorbs.net',
-             'zen.spamhaus.org', 'bl.mcafee.com', 'spam.spamrats.com'] if args['--proxy_dnsbl'] else None
+            dnsbl = ['bl.spamcop.net', 'cbl.abuseat.org', 'dnsbl.sorbs.net',
+                     'zen.spamhaus.org', 'bl.mcafee.com', 'spam.spamrats.com'] if args['--proxy_dnsbl'] else None
 
-    tasks = asyncio.gather(
-        broker.find(types=['HTTP', 'HTTPS'], limit=limit, strict=args['--proxy_strict'], dnsbl=dnsbl),
-        save_proxy(proxies))
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(tasks)
+            tasks = asyncio.gather(
+                broker.find(types=['HTTP', 'HTTPS'], limit=limit, strict=args['--proxy_strict'], dnsbl=dnsbl),
+                save_proxy(proxies))
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(tasks)
+            break
+        except  Exception as e:
+            print(e)
+            print('find_proxy_sleeping...')
+            Resolver._ip_hosts = [
+                'https://wtfismyip.com/text',
+                'http://api.ipify.org/',
+                'http://ipinfo.io/ip',
+                'http://ipv4.icanhazip.com/',
+                'http://myexternalip.com/raw',
+                'http://ipinfo.io/ip',
+                'http://ifconfig.io/ip',
+            ]
+            sleep(random.randint(3, 15))
 
 
 class HTTPClient:
