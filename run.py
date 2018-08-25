@@ -186,7 +186,9 @@ def parse_args():
         '--proxy_strict': Or(None, Use(bool)),
         '--continue': Or(None, Use(bool)),
         '--help': Or(None, Use(bool)),
-        '--path': Or(None, And(Use(os.path.realpath), os.path.exists), error='--path=<path> PATH should exist')
+        '--path': Or(None, And(Use(os.path.realpath),
+                               lambda x: os.makedirs(x, exist_ok=True) or os.path.exists(x)),
+                     error='--path=<path> PATH is incorrect')
     }, ignore_extra_keys=False)
     try:
         validate = schema.validate(arguments)
