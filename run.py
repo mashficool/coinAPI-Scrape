@@ -147,8 +147,12 @@ def generate_keys(num=1):
 
 
 def readKeys():
-    with open("keys.json", "r") as f:
-        return json.load(f)
+    try:
+        with open("keys.json", "r") as f:
+            return json.load(f)
+    except Exception as e:
+        print(e)
+        return []
 
 
 def parse_args():
@@ -438,6 +442,7 @@ def read_proxies():
             return proxies_list
     except Exception as e:
         print(e)
+        return []
 
 
 def read_rproxies():
@@ -448,6 +453,7 @@ def read_rproxies():
             return proxies_list
     except Exception as e:
         print(e)
+        return []
 
 
 def find_proxy(limit=1000):
