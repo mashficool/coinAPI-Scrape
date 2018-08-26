@@ -96,6 +96,7 @@ def generate_keys(num=1):
     i = 0
     while i < num:
         try:
+            sleep(random.randint(3, 8))
             session = GuerrillaMailSession()
             email_address = session.get_session_state()['email_address'].split('@')[0] + '@' + random.choice(
                 ['sharklasers.com', 'guerrillamail.info', 'grr.la', 'guerrillamail.biz', 'guerrillamail.com',
@@ -119,7 +120,7 @@ def generate_keys(num=1):
             while True:
                 try:
                     print('waiting for mail')
-                    sleep(random.randint(5, 25))
+                    sleep(random.randint(5, 10))
                     email_list = session.get_email_list()
                     message = email_list[0].excerpt
                     matchObj = re.search(r'API Key: (.*)', message, re.M | re.I)
@@ -364,8 +365,11 @@ def make_prequest(method='get',
                   cookies=None,
                   proxies=None,
                   json=None):
-    ua = UserAgent()
-    headers.update({'User-Agent': ua.random})
+    try:
+        ua = UserAgent()
+        headers.update({'User-Agent': ua.random})
+    except Exception as e:
+        print(e)
 
     if proxy_type == 'None':
         while True:
