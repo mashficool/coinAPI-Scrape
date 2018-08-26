@@ -323,10 +323,11 @@ def getOhlcv(symbol):
     data_frame = pd.DataFrame.from_dict(symbol_list)
 
     if len(data_frame.index) > 0:
-        save_df(data_frame, symbol,
-                columns=['time_open', 'price_close', 'volume_traded', 'price_open', 'price_high', 'price_low',
-                         'trades_count'],
-                header=['Date', 'Close', 'Volume', 'Open', 'High', 'Low', 'Market Cap'])
+        save_df(data_frame, symbol)
+        # save_df(data_frame, symbol,
+        #         columns=['time_open', 'price_close', 'volume_traded', 'price_open', 'price_high', 'price_low',
+        #                  'trades_count'],
+        #         header=['Date', 'Close', 'Volume', 'Open', 'High', 'Low', 'Market Cap'])
     else:
         logger.info('no data to save')
 
