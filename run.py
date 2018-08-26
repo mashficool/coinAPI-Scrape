@@ -9,7 +9,7 @@ python run.py --exchange=BINANCE --quote=USDT,BTC,ETH --base=BTC,ETH,EOS,ONT,BCC
 
 
 Usage:
-  run.py (--symbol=<string> | [--exchange=<string>] [--base=<string>] [--quote=<string>] [--type=<string>]) --source=<string> --from=<date> [--to=<date>] [--period=<string>]  [--limit=<int>]  [--levels=<int>]  [--path=<path>] [--filetype=<string>] [--proxy_type=<string>] [--timeout=<int>] [--generate_keys=<int>] [--find_n_proxy=<int>] [--proxy_dnsbl] [--proxy_strict]
+  run.py (--symbol=<string> | [--exchange=<string>] [--base=<string>] [--quote=<string>] [--type=<string>]) --source=<string> --from=<date> [--to=<date>] [--period=<string>]  [--limit=<int>]  [--levels=<int>]  [--path=<path>] [--filetype=<string>] [--proxy_type=<string>] [--timeout=<int>] [--generate_keys=<int>] [--find_n_proxy=<int>] [--proxy_dnsbl] [--proxy_strict] [--log_to=<filename>]
   run.py --continue [--path=<path>]
   run.py (-h | --help)
 
@@ -37,11 +37,13 @@ Options:
   --proxy_dnsbl  Check proxy in spam databases (DNSBL) [default: False].
   --proxy_strict  strict proxy search [default: False].
   --continue  continue the last run [default: False].
+  --log_to=<filename>  specify a file name to save all the output to.
 
 """
 
 import asyncio
 import json
+import logging
 import os
 import random
 import re
@@ -92,7 +94,7 @@ args = {}
 
 
 def generate_keys(num=1):
-    print('generate_keys', end='\n' * 2)
+    logger.info('generate_keys')
     i = 0
     while i < num:
         try:
@@ -103,7 +105,7 @@ def generate_keys(num=1):
                  'guerrillamail.de', 'guerrillamail.net', 'guerrillamail.org', 'guerrillamailblock.com', 'pokemail.net',
                  'spam4.me'])
 
-            print("#" + str(i) + ", " + email_address)
+            logger.info("#" + str(i) + ", " + email_address)
 
             url = "https://rest.coinapi.io/www/freeplan"
 
@@ -114,12 +116,12 @@ def generate_keys(num=1):
             response = r.text
 
             if "OK" not in response:
-                print(response)
+                logger.info(response)
                 continue
 
             while True:
                 try:
-                    print('waiting for mail')
+                    logger.info('waiting for mail')
                     sleep(random.randint(5, 10))
                     email_list = session.get_email_list()
                     message = email_list[0].excerpt
@@ -128,13 +130,13 @@ def generate_keys(num=1):
                     if (key):
                         break
                 except GuerrillaMailException as e:
-                    print(e)
+                    logger.error(e)
                     raise Exception(e)
                 except Exception as e:
-                    print(e)
+                    logger.error(e)
 
             i += 1
-            print(key)
+            logger.info(key)
             tmpKeys = readKeys()
             tmpKeys.append(key)
             keys.append(key)
@@ -142,8 +144,8 @@ def generate_keys(num=1):
             with open("keys.json", "w") as f:
                 json.dump(tmpKeys, f)
         except  Exception as e:
-            print(e)
-            print('generate_keys_sleeping...')
+            logger.error(e)
+            logger.info('generate_keys_sleeping...')
             sleep(random.randint(10, 60))
 
 
@@ -152,7 +154,7 @@ def readKeys():
         with open("keys.json", "r") as f:
             return json.load(f)
     except Exception as e:
-        print(e)
+        logger.error(e)
         return []
 
 
@@ -187,6 +189,7 @@ def parse_args():
         '--proxy_strict': Or(None, Use(bool)),
         '--continue': Or(None, Use(bool)),
         '--help': Or(None, Use(bool)),
+        '--log_to': Or(None, Use(os.path.realpath)),
         '--path': Or(None, And(Use(os.path.realpath),
                                lambda x: os.makedirs(x, exist_ok=True) or os.path.exists(x)),
                      error='--path=<path> PATH is incorrect')
@@ -204,7 +207,7 @@ def parse_args():
 
 
 def getSymbols():
-    print('getSymbols', end='\n' * 2)
+    logger.info('getSymbols')
     symbol_ids = []
     symbols = try_keys(lambda api: api.metadata_list_symbols())
 
@@ -226,9 +229,9 @@ def getSymbols():
 
 
 def getTrades(symbol):
-    print('getTrades', end='\n' * 2)
+    logger.info('getTrades')
 
-    print(symbol)
+    logger.info(symbol)
     next_start = args['--from'].isoformat().split('.')[0]
     symbol_list = []
     while dateutil.parser.parse(next_start).date() < args['--to'].date():
@@ -249,9 +252,9 @@ def getTrades(symbol):
 
 
 def getOrder(symbol):
-    print('getOrder', end='\n' * 2)
+    logger.info('getOrder')
 
-    print(symbol)
+    logger.info(symbol)
     next_start = args['--from'].isoformat().split('.')[0]
     symbol_list = []
     while dateutil.parser.parse(next_start).date() < args['--to'].date():
@@ -273,9 +276,9 @@ def getOrder(symbol):
 
 
 def getQuotes(symbol):
-    print('getQuotes', end='\n' * 2)
+    logger.info('getQuotes')
 
-    print(symbol)
+    logger.info(symbol)
     next_start = args['--from'].isoformat().split('.')[0]
     symbol_list = []
     while dateutil.parser.parse(next_start).date() < args['--to'].date():
@@ -295,9 +298,9 @@ def getQuotes(symbol):
 
 
 def getOhlcv(symbol):
-    print('getOhlcv', end='\n' * 2)
+    logger.info('getOhlcv')
 
-    print(symbol)
+    logger.info(symbol)
     next_start = args['--from'].isoformat().split('.')[0]
     symbol_list = []
     while dateutil.parser.parse(next_start).date() < args['--to'].date():
@@ -319,13 +322,13 @@ def getOhlcv(symbol):
                          'trades_count'],
                 header=['Date', 'Close', 'Volume', 'Open', 'High', 'Low', 'Market Cap'])
     else:
-        print('no data to save')
+        logger.info('no data to save')
 
     return data_frame
 
 
 def try_keys(call):
-    print('try_keys')
+    logger.info('try_keys')
     index = 0
     while True:
         try:
@@ -339,21 +342,21 @@ def try_keys(call):
 
             if type(results) is list:
                 if response.headers.get('X-RateLimit-Remaining', None) == '0':
-                    print("consumed key: " + keys.pop(index))
-                    print("remaining keys: " + str(len(keys)))
+                    logger.info("consumed key: " + keys.pop(index))
+                    logger.info("remaining keys: " + str(len(keys)))
 
-                print("received records: ", len(results))
+                logger.info("received records: ", len(results))
                 return results
             else:
-                print(results)
+                logger.info(results)
                 if 'many requests'.lower() in response.text.lower() or 'Invalid API key'.lower() in response.text.lower() \
                         or response.headers.get('X-RateLimit-Remaining', None) == '0':
-                    print("used key: " + keys.pop(index))
-                    print("remaining keys: " + str(len(keys)))
+                    logger.info("used key: " + keys.pop(index))
+                    logger.info("remaining keys: " + str(len(keys)))
         except Exception as e:
-            print(e)
-            print("used key: " + keys.pop(index))
-            print("remaining keys: " + str(len(keys)))
+            logger.error(e)
+            logger.info("used key: " + keys.pop(index))
+            logger.info("remaining keys: " + str(len(keys)))
 
 
 def make_prequest(method='get',
@@ -369,7 +372,7 @@ def make_prequest(method='get',
         ua = UserAgent()
         headers.update({'User-Agent': ua.random})
     except Exception as e:
-        print(e)
+        logger.error(e)
 
     if proxy_type == 'None':
         while True:
@@ -377,8 +380,8 @@ def make_prequest(method='get',
                 return requests.request(method=method, url=url, headers=headers, data=data, params=params, auth=auth,
                                         cookies=cookies, proxies=proxies, json=json, timeout=timeout)
             except Exception as e:
-                print(e)
-                print('make_prequest_sleeping...')
+                logger.error(e)
+                logger.info('make_prequest_sleeping...')
                 sleep(random.randint(3, 15))
 
     index = 0
@@ -398,9 +401,9 @@ def make_prequest(method='get',
                                      cookies=cookies, json=json,
                                      timeout=(timeout if timeout and timeout >= 60 else 120))
                 if r.status_code == 403 or r.status_code == 429:
-                    print(r.status_code + ' ' + r.text)
-                    print("used proxy: " + proxies_list.pop(index))
-                    print("remaining proxies: " + str(len(proxies_list)))
+                    logger.info(r.status_code + ' ' + r.text)
+                    logger.info("used proxy: " + proxies_list.pop(index))
+                    logger.info("remaining proxies: " + str(len(proxies_list)))
                 else:
                     return r
 
@@ -408,14 +411,14 @@ def make_prequest(method='get',
                 r = requests.request(method=method, url=url, headers=headers, data=data, params=params, auth=auth,
                                      cookies=cookies, proxies=proxies_list[index], json=json, timeout=timeout)
                 if r.status_code >= 400:
-                    print(r.status_code + ' ' + r.text)
-                    print("used proxy: " + proxies_list.pop(index)["http"])
-                    print("remaining proxies: " + str(len(proxies_list)))
+                    logger.info(r.status_code + ' ' + r.text)
+                    logger.info("used proxy: " + proxies_list.pop(index)["http"])
+                    logger.info("remaining proxies: " + str(len(proxies_list)))
                 return r
         except Exception as e:
-            print(e)
-            print("used proxy: " + str(proxies_list.pop(index)))
-            print("remaining proxies: " + str(len(proxies_list)))
+            logger.error(e)
+            logger.info("used proxy: " + str(proxies_list.pop(index)))
+            logger.info("remaining proxies: " + str(len(proxies_list)))
 
 
 async def save_proxy(proxies):
@@ -428,10 +431,10 @@ async def save_proxy(proxies):
             list.append(
                 {"http": ("http://%s:%d" % (proxy.host, proxy.port)),
                  "https": ("https://%s:%d" % (proxy.host, proxy.port))})
-            print("#" + str(len(list)) + ", " + proxy.host)
+            logger.info("#" + str(len(list)) + ", " + proxy.host)
         except  Exception as e:
-            print(e)
-            print('save_proxy_sleeping...')
+            logger.error(e)
+            logger.info('save_proxy_sleeping...')
             sleep(random.randint(3, 15))
 
     with open("proxies.json", "w") as f:
@@ -445,7 +448,7 @@ def read_proxies():
             proxies_list = json.load(f)
             return proxies_list
     except Exception as e:
-        print(e)
+        logger.error(e)
         return []
 
 
@@ -456,14 +459,14 @@ def read_rproxies():
             proxies_list = json.load(f)
             return proxies_list
     except Exception as e:
-        print(e)
+        logger.error(e)
         return []
 
 
 def find_proxy(limit=1000):
     while True:
         try:
-            print('find_proxy', end='\n' * 2)
+            logger.info('find_proxy')
             Resolver._ip_hosts = [
                 'https://wtfismyip.com/text',
                 'https://api.ipify.org/',
@@ -486,8 +489,8 @@ def find_proxy(limit=1000):
             loop.run_until_complete(tasks)
             break
         except  Exception as e:
-            print(e)
-            print('find_proxy_sleeping...')
+            logger.error(e)
+            logger.info('find_proxy_sleeping...')
             sleep(random.randint(3, 15))
 
 
@@ -912,26 +915,39 @@ def loop_symbols(symbols, call):
 
 
 def convert_period(df):
-    print('convert_period')
+    logger.info('convert_period')
     if len(df.index) > 0:
         pass
     else:
-        print('no data to save')
+        logger.info('no data to save')
     return df
 
 
 if __name__ == '__main__':
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    logger.addHandler(ch)
+
     start_exec = datetime.now()
     args = parse_args()
-    print(args, end='\n' * 2)
+
+    if args['--log_to'] != None:
+        fh = logging.FileHandler(args['--log_to'])
+        fh.setLevel(logging.DEBUG)
+        logger.addHandler(fh)
+
+    logger.info(args)
 
     if args['--continue']:
         try:
             latest_subdir = max([os.path.join(args['--path'], d) for d in os.listdir(args['--path'])],
                                 key=os.path.getmtime)
         except Exception as e:
-            print(e)
-            print('cant find the last run')
+            logger.error(e)
+            logger.info('cant find the last run')
             exit()
 
         with open(os.path.join(args['--path'], latest_subdir, 'args.json'), "r") as f:
@@ -960,9 +976,9 @@ if __name__ == '__main__':
         init_path()
         symbols = getSymbols()
 
-    print(symbols, end='\n' * 2)
+    logger.info(symbols)
     if len(symbols) == 0:
-        print('No valid/remaining symbols found!')
+        logger.info('No valid/remaining symbols found!')
         exit()
 
     if args['--source'] == 'ohlcv':
@@ -975,4 +991,4 @@ if __name__ == '__main__':
         elif args['--source'] == 'order':
             loop_symbols(symbols, lambda symbol: convert_period(getOrder(symbol)))
 
-    print('DONE, Took: ', timedelta(seconds=(datetime.now() - start_exec).total_seconds()))
+    logger.info('DONE, Took: ', timedelta(seconds=(datetime.now() - start_exec).total_seconds()))
