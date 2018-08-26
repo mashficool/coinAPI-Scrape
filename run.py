@@ -924,11 +924,12 @@ def convert_period(df):
 
 
 if __name__ == '__main__':
-    logger = logging.getLogger()
+    logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
 
     ch = logging.StreamHandler()
     ch.setLevel(logging.INFO)
+    ch.setFormatter(logging.Formatter('%(asctime)-15s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S'))
     logger.addHandler(ch)
 
     start_exec = datetime.now()
@@ -937,6 +938,7 @@ if __name__ == '__main__':
     if args['--log_to'] != None:
         fh = logging.FileHandler(args['--log_to'])
         fh.setLevel(logging.DEBUG)
+        fh.setFormatter(logging.Formatter('%(asctime)-15s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S'))
         logger.addHandler(fh)
 
     logger.info(args)
