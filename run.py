@@ -104,7 +104,7 @@ sources = ["ohlcv", "trades", "quotes", "order"]
 filetypes = ["json", "csv"]
 timeout = 120.0
 args = {}
-
+urllib3.disable_warnings()
 
 def generate_keys(num=1):
     logger.info('generate_keys')
