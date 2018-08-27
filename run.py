@@ -408,7 +408,7 @@ def make_prequest(method='get',
                                      cookies=cookies, json=json,
                                      timeout=(timeout if timeout and timeout >= 60 else 120))
                 if r.status_code == 403 or r.status_code == 429:
-                    logger.info(r.status_code + ' ' + r.text)
+                    logger.info(str(r.status_code) + ' ' + r.text)
                     logger.info("used proxy: " + proxies_list.pop(index))
                     logger.info("remaining proxies: " + str(len(proxies_list)))
                 else:
@@ -418,7 +418,7 @@ def make_prequest(method='get',
                 r = requests.request(method=method, url=url, headers=headers, data=data, params=params, auth=auth,
                                      cookies=cookies, proxies=proxies_list[index], json=json, timeout=timeout)
                 if r.status_code >= 400:
-                    logger.info(r.status_code + ' ' + r.text)
+                    logger.info(str(r.status_code) + ' ' + r.text)
                     logger.info("used proxy: " + proxies_list.pop(index)["http"])
                     logger.info("remaining proxies: " + str(len(proxies_list)))
                 return r
