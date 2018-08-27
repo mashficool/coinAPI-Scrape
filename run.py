@@ -352,7 +352,7 @@ def try_keys(call):
                     logger.info("consumed key: " + keys.pop(index))
                     logger.info("remaining keys: " + str(len(keys)))
 
-                logger.info("received records: ", len(results))
+                logger.info("received records: " + str(len(results)))
                 return results
             else:
                 logger.info(results)
@@ -1000,4 +1000,4 @@ if __name__ == '__main__':
         elif args['--source'] == 'order':
             loop_symbols(symbols, lambda symbol: convert_period(getOrder(symbol)))
 
-    logger.info('DONE, Took: ', timedelta(seconds=(datetime.now() - start_exec).total_seconds()))
+    logger.info('DONE, Took: ' + str(timedelta(seconds=(datetime.now() - start_exec).total_seconds())))
