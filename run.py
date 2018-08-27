@@ -69,6 +69,7 @@ from time import sleep
 
 import dateutil.parser
 import requests
+import urllib3
 
 try:
     from docopt import docopt
