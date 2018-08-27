@@ -392,8 +392,17 @@ def make_prequest(method='get',
     if proxy_type == 'None':
         while True:
             try:
-                return requests.request(method=method, url=url, headers=headers, data=data, params=params, auth=auth,
-                                        cookies=cookies, proxies=proxies, json=json, timeout=timeout, verify=False)
+                r = requests.request(method=method, url=url, headers=headers, data=data, params=params, auth=auth,
+                                     cookies=cookies, proxies=proxies, json=json, timeout=timeout, verify=False)
+                if r.status_code < 400:
+                    return r
+                elif 'many requests'.lower() in r.text.lower() or 'Invalid API key'.lower() in r.text.lower() \
+                        or r.headers.get('X-RateLimit-Remaining', None) == '0':
+                    return r
+                else:
+                    logger.info(str(r.status_code) + ' ' + r.text)
+                    logger.info('make_prequest_sleeping...')
+                    sleep(random.randint(3, 15))
             except Exception as e:
                 logger.error(e)
                 logger.info('make_prequest_sleeping...')
@@ -430,7 +439,12 @@ def make_prequest(method='get',
                     logger.info(str(r.status_code) + ' ' + r.text)
                     logger.info("used proxy: " + proxies_list.pop(index)["http"])
                     logger.info("remaining proxies: " + str(len(proxies_list)))
-                return r
+
+                    if 'many requests'.lower() in r.text.lower() or 'Invalid API key'.lower() in r.text.lower() \
+                            or r.headers.get('X-RateLimit-Remaining', None) == '0':
+                        return r
+                else:
+                    return r
         except Exception as e:
             logger.error(e)
             logger.info("used proxy: " + str(proxies_list.pop(index)))
