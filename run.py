@@ -14,6 +14,13 @@ to stop it:
     kill -9 `cat save_pid.txt`
     rm save_pid.txt
 
+
+top 100 coins on linux:
+nohup /root/anaconda3/bin/python run.py --symbol=BINANCE_SPOT_BTC_USDT,BINANCE_SPOT_ETH_USDT,BINANCE_SPOT_EOS_USDT,BINANCE_SPOT_ETH_BTC,BINANCE_SPOT_ONT_USDT,BINANCE_SPOT_BCC_USDT,BINANCE_SPOT_EOS_BTC,BINANCE_SPOT_ETC_USDT,BINANCE_SPOT_ONT_BTC,BINANCE_SPOT_NANO_BTC,BINANCE_SPOT_TRX_USDT,BINANCE_SPOT_BCC_BTC,BINANCE_SPOT_XRP_BTC,BINANCE_SPOT_ETC_BTC,BINANCE_SPOT_XRP_USDT,BINANCE_SPOT_VET_USDT,BINANCE_SPOT_TRX_BTC,BINANCE_SPOT_ADA_USDT,BINANCE_SPOT_NEO_USDT,BINANCE_SPOT_XLM_BTC,BINANCE_SPOT_CMT_BTC,BINANCE_SPOT_VET_BTC,BINANCE_SPOT_NEO_BTC,BINANCE_SPOT_ADA_BTC,BINANCE_SPOT_LTC_USDT,BINANCE_SPOT_THETA_BTC,BINANCE_SPOT_LTC_BTC,BINANCE_SPOT_IOTA_USDT,BINANCE_SPOT_BNB_BTC,BINANCE_SPOT_BNB_USDT,BINANCE_SPOT_XLM_USDT,BINANCE_SPOT_TUSD_USDT,BINANCE_SPOT_ICX_USDT,BINANCE_SPOT_IOTA_BTC,BINANCE_SPOT_ZRX_BTC,BINANCE_SPOT_ICX_BTC,BINANCE_SPOT_WTC_BTC,BINANCE_SPOT_XMR_BTC,BINANCE_SPOT_ARN_BTC,BINANCE_SPOT_TUSD_BTC,BINANCE_SPOT_LSK_BTC,BINANCE_SPOT_ZIL_BTC,BINANCE_SPOT_QKC_BTC,BINANCE_SPOT_DASH_BTC,BINANCE_SPOT_IOTX_BTC,BINANCE_SPOT_NANO_ETH,BINANCE_SPOT_DOCK_BTC,BINANCE_SPOT_NPXS_BTC,BINANCE_SPOT_NAS_BTC,BINANCE_SPOT_CMT_ETH,BINANCE_SPOT_YOYO_BTC,BINANCE_SPOT_EOS_ETH,BINANCE_SPOT_QTUM_USDT,BINANCE_SPOT_LINK_BTC,BINANCE_SPOT_GAS_BTC,BINANCE_SPOT_ELF_BTC,BINANCE_SPOT_IOST_BTC,BINANCE_SPOT_LOOM_BTC,BINANCE_SPOT_NCASH_BTC,BINANCE_SPOT_VET_ETH,BINANCE_SPOT_NULS_BTC,BINANCE_SPOT_WAN_BTC,BINANCE_SPOT_REP_BTC,BINANCE_SPOT_GTO_BTC,BINANCE_SPOT_KEY_BTC,BINANCE_SPOT_BNB_ETH,BINANCE_SPOT_CVC_BTC,BINANCE_SPOT_ADA_ETH,BINANCE_SPOT_DENT_BTC,BINANCE_SPOT_THETA_ETH,BINANCE_SPOT_XVG_BTC,BINANCE_SPOT_MDA_BTC,BINANCE_SPOT_POA_BTC,BINANCE_SPOT_IOST_ETH,BINANCE_SPOT_TRX_ETH,BINANCE_SPOT_BAT_BTC,BINANCE_SPOT_MFT_BTC,BINANCE_SPOT_ENG_BTC,BINANCE_SPOT_XRP_ETH,BINANCE_SPOT_XEM_BTC,BINANCE_SPOT_BQX_BTC,BINANCE_SPOT_NEO_ETH,BINANCE_SPOT_SNT_BTC,BINANCE_SPOT_NAS_ETH,BINANCE_SPOT_NULS_USDT,BINANCE_SPOT_ONT_ETH,BINANCE_SPOT_PPT_BTC,BINANCE_SPOT_AION_BTC,BINANCE_SPOT_SUB_BTC,BINANCE_SPOT_ADX_BTC,BINANCE_SPOT_QTUM_BTC,BINANCE_SPOT_LOOM_ETH,BINANCE_SPOT_ZRX_ETH,BINANCE_SPOT_ICX_ETH,BINANCE_SPOT_BCD_BTC,BINANCE_SPOT_STORM_BTC,BINANCE_SPOT_OMG_BTC,BINANCE_SPOT_BCC_ETH,BINANCE_SPOT_MTL_BTC,BINANCE_SPOT_ZEC_BTC --source=ohlcv --from=2016-08-20 --to=2018-08-20 --period=1MIN --proxy_type=fresh --find_n_proxy=500 --limit=100000 > my.log 2>&1 &
+
+echo $! > save_pid.txt
+
+
 Usage:
   run.py (--symbol=<string> | [--exchange=<string>] [--base=<string>] [--quote=<string>] [--type=<string>]) --source=<string> --from=<date> [--to=<date>] [--period=<string>]  [--limit=<int>]  [--levels=<int>]  [--path=<path>] [--filetype=<string>] [--proxy_type=<string>] [--timeout=<int>] [--generate_keys=<int>] [--find_n_proxy=<int>] [--proxy_dnsbl] [--proxy_strict] [--log_to=<filename>]
   run.py --continue [--path=<path>]
@@ -183,7 +190,7 @@ def parse_args():
                       error='--limit=N should be integer 1 <= N <= 100000'),
         '--levels': Or(None, And(Use(int), lambda n: 1 <= n <= 20),
                        error='--limit=N should be integer 1 <= N <= 20'),
-        '--timeout': Or(None, Use(int)),
+        '--timeout': Or(None, Use(float)),
         '--find_n_proxy': Or(None, Use(int)),
         '--generate_keys': Or(None, Use(int)),
         '--symbol': Or(None, Use(str)),
@@ -348,7 +355,7 @@ def try_keys(call):
             results = json.loads(response.text)
 
             if type(results) is list:
-                if response.headers.get('X-RateLimit-Remaining', None) == '0':
+                if response.headers.get('X-RateLimit-Remaining', None) == '0' or len(results) == 100000:
                     logger.info("consumed key: " + keys.pop(index))
                     logger.info("remaining keys: " + str(len(keys)))
 
@@ -385,7 +392,7 @@ def make_prequest(method='get',
         while True:
             try:
                 return requests.request(method=method, url=url, headers=headers, data=data, params=params, auth=auth,
-                                        cookies=cookies, proxies=proxies, json=json, timeout=timeout)
+                                        cookies=cookies, proxies=proxies, json=json, timeout=timeout, verify=False)
             except Exception as e:
                 logger.error(e)
                 logger.info('make_prequest_sleeping...')
@@ -406,7 +413,7 @@ def make_prequest(method='get',
                                      data=data,
                                      params=params, auth=auth,
                                      cookies=cookies, json=json,
-                                     timeout=(timeout if timeout and timeout >= 60 else 120))
+                                     timeout=timeout, verify=False)
                 if r.status_code == 403 or r.status_code == 429:
                     logger.info(str(r.status_code) + ' ' + r.text)
                     logger.info("used proxy: " + proxies_list.pop(index))
@@ -416,7 +423,8 @@ def make_prequest(method='get',
 
             else:
                 r = requests.request(method=method, url=url, headers=headers, data=data, params=params, auth=auth,
-                                     cookies=cookies, proxies=proxies_list[index], json=json, timeout=timeout)
+                                     cookies=cookies, proxies=proxies_list[index], json=json,
+                                     timeout=timeout, verify=False)
                 if r.status_code >= 400:
                     logger.info(str(r.status_code) + ' ' + r.text)
                     logger.info("used proxy: " + proxies_list.pop(index)["http"])
@@ -919,6 +927,7 @@ def loop_symbols(symbols, call):
         with open(os.path.join(args['--path'], "remaining_symbols.json"), "w") as f:
             symbols.pop(0)
             json.dump(symbols, f)
+            logger.info('remaining symbols: ' + str(len(symbols)))
 
 
 def convert_period(df):
@@ -964,7 +973,7 @@ if __name__ == '__main__':
             args['--continue'] = True
 
     keys = readKeys()
-    timeout = args['--timeout'] if args['--timeout'] != 0 else None
+    timeout = (args['--timeout'], args['--timeout'] * 5) if args['--timeout'] != 0 else None
     proxy_type = args['--proxy_type']
 
     if proxy_type == 'fresh':
