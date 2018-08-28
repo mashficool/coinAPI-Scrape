@@ -107,6 +107,7 @@ timeout = 120.0
 args = {}
 urllib3.disable_warnings()
 
+
 def generate_keys(num=1):
     logger.info('generate_keys')
     i = 0
@@ -133,8 +134,12 @@ def generate_keys(num=1):
                 logger.info(response)
                 continue
 
+            wait_start = datetime.now()
             while True:
                 try:
+                    if (datetime.now() - wait_start).total_seconds() > 300:
+                        raise Exception('Waiting for so long...')
+
                     logger.info('waiting for mail')
                     sleep(random.randint(5, 10))
                     email_list = session.get_email_list()
