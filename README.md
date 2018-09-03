@@ -1,5 +1,10 @@
 # Coinapi key generator and data downloader
 
+## Installation:
+```
+pip install -r requirements.txt
+```
+
 ## Example, try:
 ```
 python run.py --symbol=BITSTAMP_SPOT_LTC_USD  --source=ohlcv --from=2018-08-23 --proxy_type=rotate --period=1HRS --filetype=csv --timeout=20
