@@ -21,9 +21,17 @@ nohup /root/anaconda3/bin/python run.py --symbol=BINANCE_SPOT_BTC_USDT,BINANCE_S
 echo $! > save_pid.txt
 
 
+cron task:
+crontab -e
+
+MAILTO="ahmedengu@gmail.com"
+0 0 * * * /root/anaconda3/bin/python /root/task/run.py --symbol=BINANCE_SPOT_BTC_USDT,BINANCE_SPOT_ETH_USDT,BINANCE_SPOT_EOS_USDT,BINANCE_SPOT_ETH_BTC,BINANCE_SPOT_ONT_USDT,BINANCE_SPOT_BCC_USDT,BINANCE_SPOT_EOS_BTC,BINANCE_SPOT_ETC_USDT,BINANCE_SPOT_ONT_BTC,BINANCE_SPOT_NANO_BTC,BINANCE_SPOT_TRX_USDT,BINANCE_SPOT_BCC_BTC,BINANCE_SPOT_XRP_BTC,BINANCE_SPOT_ETC_BTC,BINANCE_SPOT_XRP_USDT,BINANCE_SPOT_VET_USDT,BINANCE_SPOT_TRX_BTC,BINANCE_SPOT_ADA_USDT,BINANCE_SPOT_NEO_USDT,BINANCE_SPOT_XLM_BTC,BINANCE_SPOT_CMT_BTC,BINANCE_SPOT_VET_BTC,BINANCE_SPOT_NEO_BTC,BINANCE_SPOT_ADA_BTC,BINANCE_SPOT_LTC_USDT,BINANCE_SPOT_THETA_BTC,BINANCE_SPOT_LTC_BTC,BINANCE_SPOT_IOTA_USDT,BINANCE_SPOT_BNB_BTC,BINANCE_SPOT_BNB_USDT,BINANCE_SPOT_XLM_USDT,BINANCE_SPOT_TUSD_USDT,BINANCE_SPOT_ICX_USDT,BINANCE_SPOT_IOTA_BTC,BINANCE_SPOT_ZRX_BTC,BINANCE_SPOT_ICX_BTC,BINANCE_SPOT_WTC_BTC,BINANCE_SPOT_XMR_BTC,BINANCE_SPOT_ARN_BTC,BINANCE_SPOT_TUSD_BTC,BINANCE_SPOT_LSK_BTC,BINANCE_SPOT_ZIL_BTC,BINANCE_SPOT_QKC_BTC,BINANCE_SPOT_DASH_BTC,BINANCE_SPOT_IOTX_BTC,BINANCE_SPOT_NANO_ETH,BINANCE_SPOT_DOCK_BTC,BINANCE_SPOT_NPXS_BTC,BINANCE_SPOT_NAS_BTC,BINANCE_SPOT_CMT_ETH,BINANCE_SPOT_YOYO_BTC,BINANCE_SPOT_EOS_ETH,BINANCE_SPOT_QTUM_USDT,BINANCE_SPOT_LINK_BTC,BINANCE_SPOT_GAS_BTC,BINANCE_SPOT_ELF_BTC,BINANCE_SPOT_IOST_BTC,BINANCE_SPOT_LOOM_BTC,BINANCE_SPOT_NCASH_BTC,BINANCE_SPOT_VET_ETH,BINANCE_SPOT_NULS_BTC,BINANCE_SPOT_WAN_BTC,BINANCE_SPOT_REP_BTC,BINANCE_SPOT_GTO_BTC,BINANCE_SPOT_KEY_BTC,BINANCE_SPOT_BNB_ETH,BINANCE_SPOT_CVC_BTC,BINANCE_SPOT_ADA_ETH,BINANCE_SPOT_DENT_BTC,BINANCE_SPOT_THETA_ETH,BINANCE_SPOT_XVG_BTC,BINANCE_SPOT_MDA_BTC,BINANCE_SPOT_POA_BTC,BINANCE_SPOT_IOST_ETH,BINANCE_SPOT_TRX_ETH,BINANCE_SPOT_BAT_BTC,BINANCE_SPOT_MFT_BTC,BINANCE_SPOT_ENG_BTC,BINANCE_SPOT_XRP_ETH,BINANCE_SPOT_XEM_BTC,BINANCE_SPOT_BQX_BTC,BINANCE_SPOT_NEO_ETH,BINANCE_SPOT_SNT_BTC,BINANCE_SPOT_NAS_ETH,BINANCE_SPOT_NULS_USDT,BINANCE_SPOT_ONT_ETH,BINANCE_SPOT_PPT_BTC,BINANCE_SPOT_AION_BTC,BINANCE_SPOT_SUB_BTC,BINANCE_SPOT_ADX_BTC,BINANCE_SPOT_QTUM_BTC,BINANCE_SPOT_LOOM_ETH,BINANCE_SPOT_ZRX_ETH,BINANCE_SPOT_ICX_ETH,BINANCE_SPOT_BCD_BTC,BINANCE_SPOT_STORM_BTC,BINANCE_SPOT_OMG_BTC,BINANCE_SPOT_BCC_ETH,BINANCE_SPOT_MTL_BTC,BINANCE_SPOT_ZEC_BTC --source=ohlcv --from=$(date --date=' 1 days ago' '+%Y-%m-%d') --to=$(date '+%Y-%m-%d') --period=1MIN --proxy_type=fresh --find_n_proxy=500 --limit=100000 --timeout=5 >/dev/null 2>&1
+
+
 Usage:
-  run.py (--symbol=<string> | [--exchange=<string>] [--base=<string>] [--quote=<string>] [--type=<string>]) --source=<string> --from=<date> [--to=<date>] [--period=<string>]  [--limit=<int>]  [--levels=<int>]  [--path=<path>] [--filetype=<string>] [--proxy_type=<string>] [--timeout=<int>] [--generate_keys=<int>] [--find_n_proxy=<int>] [--proxy_dnsbl] [--proxy_strict] [--log_to=<filename>]
+  run.py (--symbol=<string> | [--exchange=<string>] [--base=<string>] [--quote=<string>] [--type=<string>]) [--source=<string>] (--from=<date>|--from=<date> --track_from) [--to=<date>] [--period=<string>]  [--limit=<int>]  [--levels=<int>]  [--path=<path>] [--filetype=<string>] [--proxy_type=<string>] [--timeout=<int>] [--generate_keys=<int>] [--find_n_proxy=<int>] [--proxy_dnsbl] [--proxy_strict] [--log_to=<filename>] [--dropbox_key=<string>] [--dropbox [keep]] [--dropbox_dir=<path>]
   run.py --continue [--path=<path>]
+  run.py --convert=<path> --period=<string> [--path=<path>] [--dropbox_key=<string>] [--dropbox [keep]] [--dropbox_dir=<path>] [--source=<string>] [--filetype=<string>]
   run.py (-h | --help)
 
 Arguments:
@@ -33,7 +41,9 @@ Arguments:
   --quote=<string>     FX Spot quote asset identifier, for derivatives it’s contract underlying (e.g. USD for BTC/USD), comma separated, check https://docs.coinapi.io/#list-all-symbols
   --type=<string>     Type of symbol (possible values are: SPOT, FUTURES or OPTION), comma separated
   --from=<date>     starting date.
-  --source=<string>     the data to be downloaded (ohlcv, trades, quotes, order).
+  --source=<string>     the data to be downloaded (ohlcv, trades, quotes, order) [default: ohlcv].
+  --convert=<path>     a path to a directory that contains csv files to be converted.
+  --continue  continue the last run [default: False].
 
 Options:
   -h --help     Show this screen.
@@ -49,8 +59,12 @@ Options:
   --proxy_type=<string>  type of proxy (None, fresh, list, rotate) [default: None].
   --proxy_dnsbl  Check proxy in spam databases (DNSBL) [default: False].
   --proxy_strict  strict proxy search [default: False].
-  --continue  continue the last run [default: False].
+  --dropbox  to enable moving files to dropbox [default: false].
+  --dropbox_key=<string>  dropbox access key [default: IAO3blUBPSAAAAAAAAAAGdXfH_dwns1tIWEpBT4ExVi4agvtKLlfZjgiDiFT1Y-6].
+  --dropbox_dir=<path>  dropbox directory to upload to [default: /OHLCV_data/Binance/1Min_OHLCV].
+  keep  to keep files after copying them to dropbox [default: false].
   --log_to=<filename>  specify a file name to save all the output to.
+  --track_from  to keep track of the last from to ensure that the script starts from the last time it ran gonna use --from if the last from not found [default: false].
 
 """
 
@@ -60,9 +74,11 @@ import logging
 import os
 import random
 import re
+import shutil
 import urllib
 import urllib.parse
 import urllib.request
+import warnings
 from datetime import datetime, timedelta
 from json import JSONDecoder, JSONEncoder
 from time import sleep
@@ -73,14 +89,16 @@ import urllib3
 
 try:
     from docopt import docopt
-    from schema import Schema, And, Or, Use, SchemaError
+    from schema import Schema, And, Or, Use, SchemaError, Regex
     import names
     from guerrillamail import GuerrillaMailSession, GuerrillaMailException
     from fake_useragent import UserAgent
     from proxybroker import Broker
     from proxybroker.resolver import Resolver
     import pandas as pd
+    import dropbox
 except ImportError:
+    pass
     exit('One or more of the required libraries is missing\n'
          'Use the following commands to install them:\n'
          'pip install schema\n'
@@ -90,12 +108,21 @@ except ImportError:
          'pip install fake-useragent\n'
          'pip install proxybroker\n'
          'pip install pandas\n'
+         'pip install dropbox\n'
+         '\n\nOr run:\n'
+         'pip install -r requirements.txt\n'
          '\n')
 
 periods = ["1SEC", "2SEC", "3SEC", "4SEC", "5SEC", "6SEC", "10SEC", "15SEC", "20SEC", "30SEC", "1MIN", "2MIN", "3MIN",
            "4MIN", "5MIN", "6MIN", "10MIN", "15MIN", "20MIN", "30MIN", "1HRS", "2HRS", "3HRS", "4HRS", "6HRS", "8HRS",
            "12HRS", "1DAY", "2DAY", "3DAY", "5DAY", "7DAY", "10DAY", "1MTH", "2MTH", "3MTH", "4MTH", "6MTH", "1YRS",
            "2YRS", "3YRS", "4YRS", "5YRS"]
+
+pd_offset = ["1S", "2S", "3S", "4S", "5S", "6S", "10S", "15S", "20S", "30S", "60S", "120S", "180S", "240S", "300S",
+             "360S", "600S", "900S", "1200S", "1800S", "3600S", "7200S", "10800S", "14400S", "21600S", "28800S",
+             "43200S", "86400S", "172800S", "259200S", "432000S", "604800S", "864000S", "1M", "2M", "3M", "4M", "6M",
+             "12M", "24M", "36M", "48M", "60M"]
+
 proxies_list = []
 proxy_type = 'None'
 PRODUCTION_URL = 'https://rest.coinapi.io/v1%s'
@@ -106,6 +133,7 @@ filetypes = ["json", "csv"]
 timeout = 120.0
 args = {}
 urllib3.disable_warnings()
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 def generate_keys(num=1):
@@ -138,7 +166,7 @@ def generate_keys(num=1):
             while True:
                 try:
                     if (datetime.now() - wait_start).total_seconds() > 300:
-                        raise Exception('Waiting for so long...')
+                        raise GuerrillaMailException('Waiting for so long...')
 
                     logger.info('waiting for mail')
                     sleep(random.randint(5, 10))
@@ -149,7 +177,6 @@ def generate_keys(num=1):
                     if (key):
                         break
                 except GuerrillaMailException as e:
-                    logger.error(e)
                     raise Exception(e)
                 except Exception as e:
                     logger.error(e)
@@ -202,13 +229,21 @@ def parse_args():
         '--symbol': Or(None, Use(str)),
         '--exchange': Or(None, Use(str)),
         '--base': Or(None, Use(str)),
+        '--dropbox_key': Or(None, Use(str)),
+        '--dropbox_dir': Or(None, And(Use(str), Regex(r'(/(.|[\r\n])*)|(ns:[0-9]+(/.*)?)|(id:.*)')),
+                            error='--dropbox_dir=<path> path should start with "/"'),
         '--quote': Or(None, Use(str)),
         '--type': Or(None, Use(str)),
+        '--dropbox': Or(None, Use(bool)),
+        'keep': Or(None, Use(bool)),
         '--proxy_dnsbl': Or(None, Use(bool)),
         '--proxy_strict': Or(None, Use(bool)),
         '--continue': Or(None, Use(bool)),
+        '--track_from': Or(None, Use(bool)),
         '--help': Or(None, Use(bool)),
         '--log_to': Or(None, Use(os.path.realpath)),
+        '--convert': Or(None, And(Use(os.path.realpath), os.path.exists),
+                        error='--convert=<path> PATH does not exist'),
         '--path': Or(None, And(Use(os.path.realpath),
                                lambda x: os.makedirs(x, exist_ok=True) or os.path.exists(x)),
                      error='--path=<path> PATH is incorrect')
@@ -924,14 +959,20 @@ class DateTimeEncoder(JSONEncoder):
 
 
 def init_path():
-    args['--path'] = os.path.join(args['--path'], args['--source'] + '_' + datetime.now().strftime("%Y%m%d-%H%M%S"))
+    args['--path'] = os.path.join(args['--path'],
+                                  ('convert-' + args['--source'] if args['--convert'] else args['--source']) + '_' + (
+                                      args['--period'] + '_' if args['--period'] else '') + datetime.now().strftime(
+                                      "%Y%m%d-%H%M%S"))
     os.makedirs(args['--path'], exist_ok=True)
     with open(os.path.join(args['--path'], 'args.json'), "w") as f:
         json.dump(args, f, cls=DateTimeEncoder)
 
 
 def save_df(df, filename, columns=None, header=True):
-    file_path = os.path.join(args['--path'], filename + '.' + args['--filetype'])
+    file_path = os.path.join(args['--path'],
+                             filename + '_' + (args['--period'] + '_' if args['--period'] else '') + str(args[
+                                                                                                             '--from'].date()) + '.' +
+                             args['--filetype'])
     if args['--filetype'] == 'csv':
         df.to_csv(file_path, index=False,
                   columns=columns,
@@ -959,14 +1000,128 @@ def convert_period(df):
     return df
 
 
-if __name__ == '__main__':
+def handle_dropbox():
+    try:
+        logger.info('uploading to dropbox')
+        dbx = dropbox.Dropbox(args['--dropbox_key'])
+        for root, dirs, files in os.walk(args['--path']):
+            files = [file for file in files if
+                     file not in ['args.json', 'list_symbols.json', 'remaining_symbols.json', 'symbol_ids.json'] and
+                     file.split('.')[1] == args['--filetype']]
+            for filename in files:
+                local_path = os.path.join(root, filename)
+
+                relative_path = os.path.relpath(local_path, args['--path'])
+                dropbox_path = os.path.normpath(
+                    os.path.join(args['--dropbox_dir'], '_'.join(relative_path.split('_')[0:4]),
+                                 '_'.join(relative_path.split('_')[4:]))).replace('\\', '/')
+
+                with open(local_path, 'rb') as f:
+                    dbx.files_upload(f.read(), dropbox_path, mode=dropbox.files.WriteMode("overwrite"))
+                    logger.info('uploaded to: ' + dropbox_path)
+
+        if not args['keep']:
+            logger.info('deleting files')
+            shutil.rmtree(args['--path'])
+    except Exception as e:
+        logger.error(e)
+
+
+def download_source():
+    if args['--source'] == 'ohlcv':
+        loop_symbols(symbols, lambda symbol: getOhlcv(symbol))
+    elif args['--source'] == 'trades':
+        loop_symbols(symbols, lambda symbol: convert_period(getTrades(symbol)))
+    elif args['--source'] == 'quotes':
+        loop_symbols(symbols, lambda symbol: convert_period(getQuotes(symbol)))
+    elif args['--source'] == 'order':
+        loop_symbols(symbols, lambda symbol: convert_period(getOrder(symbol)))
+
+
+def handle_proxies():
+    global proxy_type
+    proxy_type = args['--proxy_type']
+    if proxy_type == 'fresh':
+        find_proxy(args['--find_n_proxy'])
+        read_proxies()
+    elif proxy_type == 'list':
+        read_proxies()
+    elif proxy_type == 'rotate':
+        read_rproxies()
+
+
+def handle_continue():
+    global f, args
+    try:
+        latest_subdir = max([os.path.join(args['--path'], d) for d in os.listdir(args['--path'])],
+                            key=os.path.getmtime)
+    except Exception as e:
+        logger.error(e)
+        logger.info('cant find the last run, gonna use the specified dir ')
+    if (latest_subdir and os.path.isdir(latest_subdir)):
+        argsDir = os.path.join(args['--path'], latest_subdir, 'args.json')
+    else:
+        logger.info('no subfolder found, gonna use the specified dir ')
+        argsDir = os.path.join(args['--path'], 'args.json')
+    with open(argsDir, "r") as f:
+        args = json.load(f, cls=DateTimeDecoder)
+        args['--continue'] = True
+
+
+def init_logger():
+    global logger
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
-
     ch = logging.StreamHandler()
     ch.setLevel(logging.INFO)
     ch.setFormatter(logging.Formatter('%(asctime)-15s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S'))
     logger.addHandler(ch)
+
+
+def read_and_convert():
+    listdir = os.listdir(args['--convert'])
+    listdir = [filename for filename in listdir if filename.endswith(args['--filetype'])]
+    if args['--source'] == 'ohlcv':
+        for filename in listdir:
+            logger.info('Converting: ' + filename)
+
+            file_path = os.path.join(args['--convert'], filename)
+
+            if args['--filetype'] == 'csv':
+                df = pd.DataFrame.from_csv(file_path, index_col=7)
+            else:
+                with open(file_path, "r") as f:
+                    df = pd.DataFrame.from_dict(json.load(f))
+
+            ohlc_dict = {'price_open': 'first', 'price_high': 'max', 'price_low': 'min', 'price_close': 'last',
+                         'volume_traded': 'sum', 'trades_count': 'sum', 'time_close': 'last', 'time_open': 'first',
+                         'time_period_end': 'last'}
+            df = df.resample(pd_offset[periods.index(args['--period'])], how=ohlc_dict)
+            args['--from'] = datetime.strptime(filename.split('_')[-1].split('.')[0], '%Y-%m-%d')
+
+            save_df(df, '_'.join(filename.split('_')[0:4]))
+
+
+def write_lastrun():
+    if args['--track_from']:
+        with open("last_run.json", "w") as f:
+            json.dump({'--from': args['--to']}, f, cls=DateTimeEncoder)
+
+
+def read_lastrun():
+    if args['--track_from']:
+        try:
+            with open(os.path.join("last_run.json"), "r") as f:
+                last_run = json.load(f, cls=DateTimeDecoder)
+            if last_run['--from']:
+                args['--from'] = last_run['--from']
+                logger.info('--from overridden with: ' + str(args['--from']))
+        except  Exception as e:
+            logger.error(e)
+
+
+if __name__ == '__main__':
+    init_logger()
 
     start_exec = datetime.now()
     args = parse_args()
@@ -980,53 +1135,38 @@ if __name__ == '__main__':
     logger.info(args)
 
     if args['--continue']:
-        try:
-            latest_subdir = max([os.path.join(args['--path'], d) for d in os.listdir(args['--path'])],
-                                key=os.path.getmtime)
-        except Exception as e:
-            logger.error(e)
-            logger.info('cant find the last run')
-            exit()
-
-        with open(os.path.join(args['--path'], latest_subdir, 'args.json'), "r") as f:
-            args = json.load(f, cls=DateTimeDecoder)
-            args['--continue'] = True
+        handle_continue()
 
     keys = readKeys()
     timeout = (args['--timeout'], args['--timeout'] * 5) if args['--timeout'] != 0 else None
-    proxy_type = args['--proxy_type']
 
-    if proxy_type == 'fresh':
-        find_proxy(args['--find_n_proxy'])
-        read_proxies()
-    elif proxy_type == 'list':
-        read_proxies()
-    elif proxy_type == 'rotate':
-        read_rproxies()
+    handle_proxies()
 
     if args['--generate_keys']:
         generate_keys(args['--generate_keys'])
 
-    if args['--continue']:
-        with open(os.path.join(args['--path'], "remaining_symbols.json"), "r") as f:
-            symbols = json.load(f)
-    else:
+    if args['--convert']:
         init_path()
-        symbols = getSymbols()
-
-    logger.info(symbols)
-    if len(symbols) == 0:
-        logger.info('No valid/remaining symbols found!')
-        exit()
-
-    if args['--source'] == 'ohlcv':
-        loop_symbols(symbols, lambda symbol: getOhlcv(symbol))
+        read_and_convert()
     else:
-        if args['--source'] == 'trades':
-            loop_symbols(symbols, lambda symbol: convert_period(getTrades(symbol)))
-        elif args['--source'] == 'quotes':
-            loop_symbols(symbols, lambda symbol: convert_period(getQuotes(symbol)))
-        elif args['--source'] == 'order':
-            loop_symbols(symbols, lambda symbol: convert_period(getOrder(symbol)))
+        if args['--continue']:
+            with open(os.path.join(args['--path'], "remaining_symbols.json"), "r") as f:
+                symbols = json.load(f)
+        else:
+            init_path()
+            read_lastrun()
+            symbols = getSymbols()
+
+        logger.info(symbols)
+        if len(symbols) == 0:
+            logger.info('No valid/remaining symbols found!')
+            exit()
+
+        download_source()
+
+    if (args['--dropbox']):
+        handle_dropbox()
+
+    write_lastrun()
 
     logger.info('DONE, Took: ' + str(timedelta(seconds=(datetime.now() - start_exec).total_seconds())))
