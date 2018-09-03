@@ -1008,6 +1008,10 @@ def handle_dropbox():
             files = [file for file in files if
                      file not in ['args.json', 'list_symbols.json', 'remaining_symbols.json', 'symbol_ids.json'] and
                      file.split('.')[1] == args['--filetype']]
+
+            if len(files) == 0:
+                logger.info('Nothing to upload')
+
             for filename in files:
                 local_path = os.path.join(root, filename)
 
