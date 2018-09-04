@@ -1,6 +1,16 @@
 # Coinapi key generator and data downloader
 
 ## Installation:
+* Python installation:
+```
+mkdir /temp
+cd /temp
+
+wget https://repo.anaconda.com/archive/Anaconda3-5.2.0-Linux-x86_64.sh
+bash Anaconda3-5.2.0-Linux-x86_64.sh
+# wizard ****
+```
+* Libraries installation:
 ```
 pip install -r requirements.txt
 ```
