@@ -29,9 +29,9 @@ MAILTO="ahmedengu@gmail.com"
 
 
 Usage:
-  run.py (--symbol=<string> | [--exchange=<string>] [--base=<string>] [--quote=<string>] [--type=<string>]) [--source=<string>] (--from=<date>|--from=<date> --track_from) [--to=<date>] [--period=<string>]  [--limit=<int>]  [--levels=<int>]  [--path=<path>] [--filetype=<string>] [--proxy_type=<string>] [--timeout=<int>] [--generate_keys=<int>] [--find_n_proxy=<int>] [--proxy_dnsbl] [--proxy_strict] [--log_to=<filename>] [--dropbox_key=<string>] [--dropbox [keep]] [--dropbox_dir=<path>]
+  run.py (--symbol=<string> | [--exchange=<string>] [--base=<string>] [--quote=<string>] [--type=<string>]) [--source=<string>] (--from=<date>|--from=<date> --track_from) [--to=<date>] [--period=<string>]  [--limit=<int>]  [--levels=<int>]  [--path=<path>] [--filetype=<string>] [--proxy_type=<string>] [--timeout=<int>] [--generate_keys=<int>] [--find_n_proxy=<int>] [--proxy_dnsbl] [--proxy_strict] [--log_to=<filename>] [--dropbox_key=<string>] [--dropbox [keep | --delete_period=<string>]] [--dropbox_dir=<path>]
   run.py --continue [--path=<path>]
-  run.py --convert=<path> --period=<string> [--path=<path>] [--dropbox_key=<string>] [--dropbox [keep]] [--dropbox_dir=<path>] [--source=<string>] [--filetype=<string>]
+  run.py --convert=<path> --period=<string> [--path=<path>] [--dropbox_key=<string>] [--dropbox [keep | --delete_period=<string>]] [--dropbox_dir=<path>] [--source=<string>] [--filetype=<string>]
   run.py (-h | --help)
 
 Arguments:
@@ -65,6 +65,8 @@ Options:
   keep  to keep files after copying them to dropbox [default: false].
   --log_to=<filename>  specify a file name to save all the output to.
   --track_from  to keep track of the last from to ensure that the script starts from the last time it ran gonna use --from if the last from not found [default: false].
+  --delete_period=<string>  comma separated periods to get deleted from the server after uploading to dropbox.
+
 
 """
 
@@ -213,6 +215,9 @@ def parse_args():
                    error='--to=date date should be in the format of YYYY-MM-DD '),
         '--period': Or(None, And(Use(str), lambda s: set(str(s).split(',')).issubset(periods)),
                        error='--period=string should be a comma separated string in ' + ','.join(periods)),
+        '--delete_period': Or(None, And(Use(str), lambda s: set(str(s).split(',')).issubset(periods)),
+                              error='--delete_period=string should be a comma separated string in ' + ','.join(
+                                  periods)),
         '--source': Or(None, And(Use(str), lambda s: s in sources),
                        error='--source=string should be a string in ' + ', '.join(sources)),
         '--filetype': Or(None, And(Use(str), lambda s: s in filetypes),
@@ -260,6 +265,7 @@ def parse_args():
         validate['--base'] = validate['--base'] and validate['--base'].split(',') or []
         validate['--quote'] = validate['--quote'] and validate['--quote'].split(',') or []
         validate['--type'] = validate['--type'] and validate['--type'].split(',') or []
+        validate['--delete_period'] = validate['--delete_period'] and validate['--delete_period'].split(',') or []
         validate['--period'] = validate['--period'] and validate['--period'].split(',') or []
         validate['--period'] = sorted(validate['--period'], key=lambda x: periods.index(x))
         validate['--path'] = [validate['--path']]
@@ -1044,8 +1050,9 @@ def handle_dropbox():
                         dbx.files_upload(f.read(), dropbox_path, mode=dropbox.files.WriteMode("overwrite"))
                         logger.info('uploaded to: ' + dropbox_path)
 
-            if not args['keep']:
-                logger.info('deleting folder' + args['--path'][index])
+            if (not args['keep'] and len(args['--delete_period']) == 0) \
+                    or args['--period'][index - 1] in args['--delete_period']:
+                logger.info('deleting folder ' + args['--path'][index])
                 shutil.rmtree(args['--path'][index])
 
             index += 1
