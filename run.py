@@ -1020,7 +1020,7 @@ def handle_dropbox():
     index = 1
     while index < len(args['--path']):
         try:
-            logger.info('uploading to dropbox,path: ' + args['--path'][index])
+            logger.info('uploading a path to dropbox: ' + args['--path'][index])
             dbx = dropbox.Dropbox(args['--dropbox_key'])
             for root, dirs, files in os.walk(args['--path'][index]):
                 files = [file for file in files if
