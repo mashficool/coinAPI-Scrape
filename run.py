@@ -61,7 +61,7 @@ Options:
   --proxy_strict  strict proxy search [default: False].
   --dropbox  to enable moving files to dropbox [default: false].
   --dropbox_key=<string>  dropbox access key [default: IAO3blUBPSAAAAAAAAAAGdXfH_dwns1tIWEpBT4ExVi4agvtKLlfZjgiDiFT1Y-6].
-  --dropbox_dir=<path>  dropbox directory to upload to [default: /OHLCV_data/Binance/1Min_OHLCV].
+  --dropbox_dir=<path>  dropbox directory to upload to, the script gonna create a multiple subfolders containing the exchange name,period,coin then the csv ex. (/OHLCV_data/BITSTAMP/2HRS_OHLCV/BITSTAMP_SPOT_LTC_USD/2HRS_2018-08-30.csv) [default: /OHLCV_data].
   keep  to keep files after copying them to dropbox [default: false].
   --log_to=<filename>  specify a file name to save all the output to.
   --track_from  to keep track of the last from to ensure that the script starts from the last time it ran gonna use --from if the last from not found [default: false].
@@ -226,14 +226,19 @@ def parse_args():
         '--timeout': Or(None, Use(float)),
         '--find_n_proxy': Or(None, Use(int)),
         '--generate_keys': Or(None, Use(int)),
-        '--symbol': Or(None, Use(str)),
-        '--exchange': Or(None, Use(str)),
-        '--base': Or(None, Use(str)),
+        '--symbol': Or(None, And(Use(str), lambda s: s.isupper()),
+                       error='--symbol=string should upper case '),
+        '--exchange': Or(None, And(Use(str), lambda s: s.isupper()),
+                         error='--exchange=string should upper case '),
+        '--base': Or(None, And(Use(str), lambda s: s.isupper()),
+                     error='--base=string should upper case '),
+        '--quote': Or(None, And(Use(str), lambda s: s.isupper()),
+                      error='--quote=string should upper case '),
+        '--type': Or(None, And(Use(str), lambda s: s.isupper()),
+                     error='--type=string should upper case '),
         '--dropbox_key': Or(None, Use(str)),
         '--dropbox_dir': Or(None, And(Use(str), Regex(r'(/(.|[\r\n])*)|(ns:[0-9]+(/.*)?)|(id:.*)')),
                             error='--dropbox_dir=<path> path should start with "/"'),
-        '--quote': Or(None, Use(str)),
-        '--type': Or(None, Use(str)),
         '--dropbox': Or(None, Use(bool)),
         'keep': Or(None, Use(bool)),
         '--proxy_dnsbl': Or(None, Use(bool)),
@@ -257,18 +262,20 @@ def parse_args():
         validate['--type'] = validate['--type'] and validate['--type'].split(',') or []
         validate['--period'] = validate['--period'] and validate['--period'].split(',') or []
         validate['--period'] = sorted(validate['--period'], key=lambda x: periods.index(x))
+        validate['--path'] = [validate['--path']]
 
         return validate
     except SchemaError as e:
-        exit(e)
+        logger.error(e)
+        exit()
 
 
-def getSymbols():
+def getSymbols(index=1):
     logger.info('getSymbols')
     symbol_ids = []
     symbols = try_keys(lambda api: api.metadata_list_symbols())
 
-    with open(os.path.join(args['--path'], 'list_symbols.json'), "w") as f:
+    with open(os.path.join(args['--path'][index], 'list_symbols.json'), "w") as f:
         json.dump(symbols, f)
 
     for symbol in symbols:
@@ -279,7 +286,7 @@ def getSymbols():
                 and (len(args['--quote']) == 0 or symbol['asset_id_quote'] in args['--quote']):
             symbol_ids.append(symbol['symbol_id'])
 
-    with open(os.path.join(args['--path'], 'symbol_ids.json'), "w") as f:
+    with open(os.path.join(args['--path'][index], 'symbol_ids.json'), "w") as f:
         json.dump(symbol_ids, f)
 
     return symbol_ids
@@ -961,22 +968,27 @@ class DateTimeEncoder(JSONEncoder):
             return JSONEncoder.default(self, obj)
 
 
-def init_path():
-    args['--path'] = os.path.join(args['--path'],
-                                  ('convert-' + args['--source'] if args['--convert'] else args['--source']) + '_' + (
-                                      args['--period'][0] + '_' if args['--period'][
-                                          0] else '') + datetime.now().strftime(
-                                      "%Y%m%d-%H%M%S"))
-    os.makedirs(args['--path'], exist_ok=True)
-    with open(os.path.join(args['--path'], 'args.json'), "w") as f:
-        json.dump(args, f, cls=DateTimeEncoder)
+def init_path(index=0):
+    args['--path'].append(os.path.join(args['--path'][0],
+                                       ('convert-' + args['--source'] if args['--convert'] else args[
+                                           '--source']) + '_' + (
+                                           args['--period'][index] + '_' if args['--period'][
+                                               index] else '') + datetime.now().strftime(
+                                           "%Y%m%d-%H%M%S")))
+    os.makedirs(args['--path'][-1], exist_ok=True)
+    if index == 0:
+        with open(os.path.join(args['--path'][-1], 'args.json'), "w") as f:
+            json.dump(args, f, cls=DateTimeEncoder)
 
 
-def save_df(df, filename, columns=None, header=True):
-    file_path = os.path.join(args['--path'],
-                             filename + '_' + (args['--period'][0] + '_' if args['--period'][0] else '') + str(args[
-                                                                                                             '--from'].date()) + '.' +
-                             args['--filetype'])
+def save_df(df, filename, columns=None, header=True, index=1):
+    file_path = os.path.join(args['--path'][index], filename + '_' + (
+        args['--period'][index - 1] + '_' if args['--period'][index - 1] else '') + str(args['--from'].date()) + '&' + (
+                                     'time_period_end' in df and df['time_period_end'][-1].split('T')[
+                                 0] or 'time_coinapi' in df and df['time_coinapi'][-1].split('T')[0] or str(
+                                 args['--to'].date())) + '.' + args[
+                                 '--filetype'])
+
     if args['--filetype'] == 'csv':
         df.to_csv(file_path, index=False,
                   columns=columns,
@@ -985,11 +997,11 @@ def save_df(df, filename, columns=None, header=True):
         df.to_json(file_path, orient='records')
 
 
-def loop_symbols(symbols, call):
+def loop_symbols(symbols, call, index=1):
     while len(symbols) > 0:
         call(symbols[0])
 
-        with open(os.path.join(args['--path'], "remaining_symbols.json"), "w") as f:
+        with open(os.path.join(args['--path'][index], "remaining_symbols.json"), "w") as f:
             symbols.pop(0)
             json.dump(symbols, f)
             logger.info('remaining symbols: ' + str(len(symbols)))
@@ -1005,11 +1017,12 @@ def convert_period(df):
 
 
 def handle_dropbox():
-    while True:
+    index = 1
+    while index < len(args['--path']):
         try:
-            logger.info('uploading to dropbox')
+            logger.info('uploading to dropbox,path: ' + args['--path'][index])
             dbx = dropbox.Dropbox(args['--dropbox_key'])
-            for root, dirs, files in os.walk(args['--path']):
+            for root, dirs, files in os.walk(args['--path'][index]):
                 files = [file for file in files if
                          file not in ['args.json', 'list_symbols.json', 'remaining_symbols.json', 'symbol_ids.json'] and
                          file.split('.')[1] == args['--filetype']]
@@ -1020,9 +1033,11 @@ def handle_dropbox():
                 for filename in files:
                     local_path = os.path.join(root, filename)
 
-                    relative_path = os.path.relpath(local_path, args['--path'])
+                    relative_path = os.path.relpath(local_path, args['--path'][index])
                     dropbox_path = os.path.normpath(
-                        os.path.join(args['--dropbox_dir'], '_'.join(relative_path.split('_')[0:4]),
+                        os.path.join(args['--dropbox_dir'], relative_path.split('_')[0],
+                                     relative_path.split('_')[4] + '_' + args['--source'].upper(),
+                                     '_'.join(relative_path.split('_')[0:4]),
                                      '_'.join(relative_path.split('_')[4:]))).replace('\\', '/')
 
                     with open(local_path, 'rb') as f:
@@ -1030,10 +1045,10 @@ def handle_dropbox():
                         logger.info('uploaded to: ' + dropbox_path)
 
             if not args['keep']:
-                logger.info('deleting files')
-                shutil.rmtree(args['--path'])
+                logger.info('deleting folder' + args['--path'][index])
+                shutil.rmtree(args['--path'][index])
 
-            break
+            index += 1
         except Exception as e:
             logger.error(e)
             logger.info('Failed to upload to dropbox ... sleeping ...')
@@ -1066,19 +1081,24 @@ def handle_proxies():
 def handle_continue():
     global args
     try:
-        latest_subdir = max([os.path.join(args['--path'], d) for d in os.listdir(args['--path'])],
+        latest_subdir = max([os.path.join(args['--path'][0], d) for d in os.listdir(args['--path'][0])],
                             key=os.path.getmtime)
     except Exception as e:
         logger.error(e)
         logger.info('cant find the last run, gonna use the specified dir ')
     if (latest_subdir and os.path.isdir(latest_subdir)):
-        argsDir = os.path.join(args['--path'], latest_subdir, 'args.json')
+        argsDir = os.path.join(args['--path'][0], latest_subdir, 'args.json')
     else:
         logger.info('no subfolder found, gonna use the specified dir ')
-        argsDir = os.path.join(args['--path'], 'args.json')
-    with open(argsDir, "r") as f:
-        args = json.load(f, cls=DateTimeDecoder)
-        args['--continue'] = True
+        argsDir = os.path.join(args['--path'][0], 'args.json')
+
+    if os.path.exists(argsDir):
+        with open(argsDir, "r") as f:
+            args = json.load(f, cls=DateTimeDecoder)
+            args['--continue'] = True
+    else:
+        logger.info('cant find args .. exit')
+        exit()
 
 
 def init_logger():
@@ -1091,7 +1111,12 @@ def init_logger():
     logger.addHandler(ch)
 
 
-def read_and_convert():
+def read_and_convert(index=0):
+    logger.info('read_and_convert, ' + args['--period'][index])
+
+    init_path(index)
+    logger.info('output to: ' + args['--path'][-1])
+
     listdir = os.listdir(args['--convert'])
     listdir = [filename for filename in listdir if filename.endswith(args['--filetype'])]
     if args['--source'] == 'ohlcv':
@@ -1109,28 +1134,31 @@ def read_and_convert():
             ohlc_dict = {'price_open': 'first', 'price_high': 'max', 'price_low': 'min', 'price_close': 'last',
                          'volume_traded': 'sum', 'trades_count': 'sum', 'time_close': 'last', 'time_open': 'first',
                          'time_period_end': 'last'}
-            df = df.resample(pd_offset[periods.index(args['--period'][0])], how=ohlc_dict)
+            df = df.resample(pd_offset[periods.index(args['--period'][index])], how=ohlc_dict)
             args['--from'] = datetime.strptime(filename.split('_')[-1].split('.')[0], '%Y-%m-%d')
 
-            save_df(df, '_'.join(filename.split('_')[0:4]))
+            save_df(df, '_'.join(filename.split('_')[0:4]), index=index + 1)
 
 
 def write_lastrun():
-    if args['--track_from']:
-        with open("last_run.json", "w") as f:
-            json.dump({'--from': args['--to']}, f, cls=DateTimeEncoder)
+    with open("last_run.json", "w") as f:
+        json.dump({','.join(
+            args['--symbol'] + args['--exchange'] + args['--base'] + args['--quote'] + args['--type']): args[
+            '--to']},
+                  f, cls=DateTimeEncoder)
 
 
 def read_lastrun():
-    if args['--track_from']:
-        try:
-            with open(os.path.join("last_run.json"), "r") as f:
-                last_run = json.load(f, cls=DateTimeDecoder)
-            if last_run['--from']:
-                args['--from'] = last_run['--from']
+    try:
+        with open(os.path.join("last_run.json"), "r") as f:
+            last_run = json.load(f, cls=DateTimeDecoder)
+            last_run_from = ','.join(
+                args['--symbol'] + args['--exchange'] + args['--base'] + args['--quote'] + args['--type'])
+            if last_run_from in last_run:
+                args['--from'] = last_run[last_run_from]
                 logger.info('--from overridden with: ' + str(args['--from']))
-        except  Exception as e:
-            logger.error(e)
+    except  Exception as e:
+        logger.error(e)
 
 
 if __name__ == '__main__':
@@ -1159,15 +1187,16 @@ if __name__ == '__main__':
         generate_keys(args['--generate_keys'])
 
     if args['--convert']:
-        init_path()
-        read_and_convert()
+        for index in range(len(args['--period'])):
+            read_and_convert(index)
     else:
         if args['--continue']:
-            with open(os.path.join(args['--path'], "remaining_symbols.json"), "r") as f:
+            with open(os.path.join(args['--path'][1], "remaining_symbols.json"), "r") as f:
                 symbols = json.load(f)
         else:
             init_path()
-            read_lastrun()
+            if args['--track_from']:
+                read_lastrun()
             symbols = getSymbols()
 
         logger.info(symbols)
@@ -1177,9 +1206,16 @@ if __name__ == '__main__':
 
         download_source()
 
+        if len(args['--period']) > 1 and args['--source'] == 'ohlcv':
+            args['--convert'] = args['--path'][1]
+            logger.info('converting path: ' + args['--convert'])
+            for index in range(1, len(args['--period'])):
+                read_and_convert(index)
+
     if (args['--dropbox']):
         handle_dropbox()
 
-    write_lastrun()
+    if args['--track_from']:
+        write_lastrun()
 
     logger.info('DONE, Took: ' + str(timedelta(seconds=(datetime.now() - start_exec).total_seconds())))
