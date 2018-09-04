@@ -50,7 +50,7 @@ Options:
   --path=<path>  a directory to save data to [default: out].
   --filetype=<string>  the saved data file type (json, csv) [default: csv].
   --to=<date>  ending date.
-  --period=<string>  supported time periods available for requesting OHLCV timeseries data OR to convert data to, check https://docs.coinapi.io/#list-all-periods.
+  --period=<string>  supported time periods available for requesting OHLCV timeseries data OR to convert data to,comma separated, check https://docs.coinapi.io/#list-all-periods.
   --limit=<int>  Amount of items to return , minimum is 1, maximum is 100000 [default: 10000].
   --levels=<int>  Maximum amount of levels from each side of the book to include in response, max 20 [default: 20].
   --timeout=<int>  request timeout [default: 120].
@@ -211,8 +211,8 @@ def parse_args():
                      error='--from=date date should be in the format of YYYY-MM-DD '),
         '--to': Or(And(None, Use(lambda i: datetime.now())), Use(lambda i: datetime.strptime(i, '%Y-%m-%d')),
                    error='--to=date date should be in the format of YYYY-MM-DD '),
-        '--period': Or(None, And(Use(str), lambda s: s in periods),
-                       error='--period=string should be a string in ' + ', '.join(periods)),
+        '--period': Or(None, And(Use(str), lambda s: set(str(s).split(',')).issubset(periods)),
+                       error='--period=string should be a comma separated string in ' + ','.join(periods)),
         '--source': Or(None, And(Use(str), lambda s: s in sources),
                        error='--source=string should be a string in ' + ', '.join(sources)),
         '--filetype': Or(None, And(Use(str), lambda s: s in filetypes),
@@ -255,6 +255,9 @@ def parse_args():
         validate['--base'] = validate['--base'] and validate['--base'].split(',') or []
         validate['--quote'] = validate['--quote'] and validate['--quote'].split(',') or []
         validate['--type'] = validate['--type'] and validate['--type'].split(',') or []
+        validate['--period'] = validate['--period'] and validate['--period'].split(',') or []
+        validate['--period'] = sorted(validate['--period'], key=lambda x: periods.index(x))
+
         return validate
     except SchemaError as e:
         exit(e)
@@ -362,7 +365,7 @@ def getOhlcv(symbol):
                                                                        'time_end':
                                                                            args['--to'].isoformat().split('.')[0],
                                                                        'limit': args['--limit'],
-                                                                       'period_id': args['--period'] or '1MIN'}))
+                                                                       'period_id': args['--period'][0] or '1MIN'}))
         if len(data) == 0:
             break
         next_start = data[-1]['time_period_end'].split('.')[0]
@@ -961,7 +964,8 @@ class DateTimeEncoder(JSONEncoder):
 def init_path():
     args['--path'] = os.path.join(args['--path'],
                                   ('convert-' + args['--source'] if args['--convert'] else args['--source']) + '_' + (
-                                      args['--period'] + '_' if args['--period'] else '') + datetime.now().strftime(
+                                      args['--period'][0] + '_' if args['--period'][
+                                          0] else '') + datetime.now().strftime(
                                       "%Y%m%d-%H%M%S"))
     os.makedirs(args['--path'], exist_ok=True)
     with open(os.path.join(args['--path'], 'args.json'), "w") as f:
@@ -970,7 +974,7 @@ def init_path():
 
 def save_df(df, filename, columns=None, header=True):
     file_path = os.path.join(args['--path'],
-                             filename + '_' + (args['--period'] + '_' if args['--period'] else '') + str(args[
+                             filename + '_' + (args['--period'][0] + '_' if args['--period'][0] else '') + str(args[
                                                                                                              '--from'].date()) + '.' +
                              args['--filetype'])
     if args['--filetype'] == 'csv':
@@ -1060,7 +1064,7 @@ def handle_proxies():
 
 
 def handle_continue():
-    global f, args
+    global args
     try:
         latest_subdir = max([os.path.join(args['--path'], d) for d in os.listdir(args['--path'])],
                             key=os.path.getmtime)
@@ -1105,7 +1109,7 @@ def read_and_convert():
             ohlc_dict = {'price_open': 'first', 'price_high': 'max', 'price_low': 'min', 'price_close': 'last',
                          'volume_traded': 'sum', 'trades_count': 'sum', 'time_close': 'last', 'time_open': 'first',
                          'time_period_end': 'last'}
-            df = df.resample(pd_offset[periods.index(args['--period'])], how=ohlc_dict)
+            df = df.resample(pd_offset[periods.index(args['--period'][0])], how=ohlc_dict)
             args['--from'] = datetime.strptime(filename.split('_')[-1].split('.')[0], '%Y-%m-%d')
 
             save_df(df, '_'.join(filename.split('_')[0:4]))
