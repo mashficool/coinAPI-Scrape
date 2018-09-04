@@ -1001,34 +1001,39 @@ def convert_period(df):
 
 
 def handle_dropbox():
-    try:
-        logger.info('uploading to dropbox')
-        dbx = dropbox.Dropbox(args['--dropbox_key'])
-        for root, dirs, files in os.walk(args['--path']):
-            files = [file for file in files if
-                     file not in ['args.json', 'list_symbols.json', 'remaining_symbols.json', 'symbol_ids.json'] and
-                     file.split('.')[1] == args['--filetype']]
+    while True:
+        try:
+            logger.info('uploading to dropbox')
+            dbx = dropbox.Dropbox(args['--dropbox_key'])
+            for root, dirs, files in os.walk(args['--path']):
+                files = [file for file in files if
+                         file not in ['args.json', 'list_symbols.json', 'remaining_symbols.json', 'symbol_ids.json'] and
+                         file.split('.')[1] == args['--filetype']]
 
-            if len(files) == 0:
-                logger.info('Nothing to upload')
+                if len(files) == 0:
+                    logger.info('Nothing to upload')
 
-            for filename in files:
-                local_path = os.path.join(root, filename)
+                for filename in files:
+                    local_path = os.path.join(root, filename)
 
-                relative_path = os.path.relpath(local_path, args['--path'])
-                dropbox_path = os.path.normpath(
-                    os.path.join(args['--dropbox_dir'], '_'.join(relative_path.split('_')[0:4]),
-                                 '_'.join(relative_path.split('_')[4:]))).replace('\\', '/')
+                    relative_path = os.path.relpath(local_path, args['--path'])
+                    dropbox_path = os.path.normpath(
+                        os.path.join(args['--dropbox_dir'], '_'.join(relative_path.split('_')[0:4]),
+                                     '_'.join(relative_path.split('_')[4:]))).replace('\\', '/')
 
-                with open(local_path, 'rb') as f:
-                    dbx.files_upload(f.read(), dropbox_path, mode=dropbox.files.WriteMode("overwrite"))
-                    logger.info('uploaded to: ' + dropbox_path)
+                    with open(local_path, 'rb') as f:
+                        dbx.files_upload(f.read(), dropbox_path, mode=dropbox.files.WriteMode("overwrite"))
+                        logger.info('uploaded to: ' + dropbox_path)
 
-        if not args['keep']:
-            logger.info('deleting files')
-            shutil.rmtree(args['--path'])
-    except Exception as e:
-        logger.error(e)
+            if not args['keep']:
+                logger.info('deleting files')
+                shutil.rmtree(args['--path'])
+
+            break
+        except Exception as e:
+            logger.error(e)
+            logger.info('Failed to upload to dropbox ... sleeping ...')
+            sleep(random.randint(10, 60))
 
 
 def download_source():
